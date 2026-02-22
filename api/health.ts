@@ -1,7 +1,5 @@
 
-import type { VercelRequest, VercelResponse } from '@vercel/node';
-
-export default function handler(req: VercelRequest, res: VercelResponse) {
+export default function handler(req, res) {
   res.status(200).json({ 
     status: 'ok',
     message: 'Pink Money Bag API is running!'
