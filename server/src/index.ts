@@ -6,7 +6,6 @@ import usersRouter from './routes/users';
 import feedbacksRouter from './routes/feedbacks';
 
 const app = express();
-const port = process.env.PORT || 9091;
 
 // Middleware
 app.use(cors());
@@ -25,6 +24,13 @@ app.use('/api/v1/transactions', transactionsRouter);
 app.use('/api/v1/users', usersRouter);
 app.use('/api/v1/feedbacks', feedbacksRouter);
 
-app.listen(port, () => {
-  console.log(`Server listening at http://localhost:${port}/`);
-});
+// For Vercel
+export default app;
+
+// For local development
+if (process.env.NODE_ENV !== 'production') {
+  const port = process.env.PORT || 9091;
+  app.listen(port, () => {
+    console.log(`Server listening at http://localhost:${port}/`);
+  });
+}
