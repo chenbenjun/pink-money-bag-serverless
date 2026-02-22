@@ -1,0 +1,10 @@
+# Ignore server directory - we only want to use api/ directory for Vercel Serverless Functions
+server/
+client/
+coze/
+.coze/
+.cozeproj/
+assets/
+apks/
+node_modules/
+.git/
