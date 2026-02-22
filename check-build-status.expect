@@ -1,0 +1,22 @@
+#!/usr/bin/expect -f
+
+set timeout 120
+
+spawn eas build:list --limit 1 --non-interactive
+
+expect {
+    "FINISHED" {
+        puts "\n\n=== 构建成功完成！===\n"
+    }
+    "ERRORED" {
+        puts "\n\n=== 构建失败 ===\n"
+    }
+    "IN_PROGRESS" {
+        puts "\n\n=== 构建中... ===\n"
+    }
+    "in queue" {
+        puts "\n\n=== 排队中... ===\n"
+    }
+}
+
+expect eof

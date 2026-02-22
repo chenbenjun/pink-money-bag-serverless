@@ -1,0 +1,24 @@
+#!/usr/bin/expect -f
+
+set timeout 60
+
+spawn eas build:configure --platform android
+
+expect {
+    "Would you like to automatically create an EAS project" {
+        send "y\r"
+        exp_continue
+    }
+    "Which platform would you like to configure" {
+        send "1\r"
+        exp_continue
+    }
+    "Configured" {
+        puts "\n配置成功！"
+        exit 0
+    }
+    timeout {
+        puts "\n配置超时"
+        exit 1
+    }
+}

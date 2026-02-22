@@ -1,0 +1,26 @@
+#!/usr/bin/expect -f
+
+set timeout 30
+
+spawn eas login
+
+expect "Email or username"
+send "56854631@qq.com\r"
+
+expect "Password"
+send "19801007\r"
+
+expect {
+    "Logged in" {
+        puts "\n登录成功！"
+        exit 0
+    }
+    "Invalid" {
+        puts "\n登录失败：账号或密码错误"
+        exit 1
+    }
+    timeout {
+        puts "\n登录超时"
+        exit 1
+    }
+}

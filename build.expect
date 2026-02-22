@@ -1,0 +1,32 @@
+#!/usr/bin/expect -f
+
+set timeout 300
+
+spawn eas build --platform android --profile preview
+
+expect {
+    "Build details" {
+        puts "\n构建已开始！"
+    }
+    "Waiting in queue" {
+        puts "\n正在排队等待构建..."
+        exp_continue
+    }
+    "Build finished" {
+        puts "\n构建完成！"
+        exp_continue
+    }
+    timeout {
+        puts "\n构建进行中，请查看上方链接..."
+    }
+}
+
+# 继续等待并输出所有内容
+expect {
+    eof {
+        exit 0
+    }
+    timeout {
+        exp_continue
+    }
+}
