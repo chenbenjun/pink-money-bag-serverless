@@ -1,8 +1,3 @@
 {
-  "version": 2,
-  "buildCommand": "cd server && npm run build",
-  "outputDirectory": "server/dist",
-  "devCommand": "cd server && npm run dev",
-  "installCommand": "cd server && npm install",
-  "framework": "other"
+  "version": 2
 }
