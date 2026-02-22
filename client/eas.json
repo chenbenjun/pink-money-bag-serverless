@@ -13,7 +13,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_BACKEND_BASE_URL": "https://ca8e972f-df3c-4e77-addb-95842742852e.dev.coze.site"
+        "EXPO_PUBLIC_BACKEND_BASE_URL": "https://pink-money-bag-serverless.onrender.com"
       }
     },
     "production": {
@@ -21,7 +21,7 @@
         "buildType": "app-bundle"
       },
       "env": {
-        "EXPO_PUBLIC_BACKEND_BASE_URL": "https://ca8e972f-df3c-4e77-addb-95842742852e.dev.coze.site"
+        "EXPO_PUBLIC_BACKEND_BASE_URL": "https://pink-money-bag-serverless.onrender.com"
       }
     }
   }
