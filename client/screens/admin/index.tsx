@@ -29,7 +29,7 @@ interface Feedback {
 export default function AdminScreen() {
   const { theme, isDark } = useTheme();
   const router = useSafeRouter();
-  const { currentUser, allUsers, logout, deleteUser } = useAuth();
+  const { currentUser, allUsers, logout, deleteUser, refreshUsers } = useAuth();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
   // 检查是否是管理员 - 使用 effect 处理重定向，避免条件 return 导致 hooks 问题
@@ -133,7 +133,7 @@ export default function AdminScreen() {
         Alert.alert('成功', `密码已重置为: ${newPassword}`);
         setResetModalVisible(false);
         // 刷新用户列表
-        await logout(); // 临时使用logout刷新，实际应该有刷新用户列表的方法
+        await refreshUsers();
       } else {
         Alert.alert('失败', result.error || '重置密码失败');
       }
