@@ -20,8 +20,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getSoundEnabled, setSoundEnabled } from '@/utils/sound';
 import { createFormDataFile } from '@/utils';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Spacing } from '@/constants/theme';
+import { Spacing, ThemeStyle, Colors } from '@/constants/theme';
 import { useFocusEffect } from 'expo-router';
+import { setColorScheme, setThemeStyle, ColorSchemeChoice } from '@/hooks/useTheme';
 
 // 3x4 = 12个预设头像
 const AVATAR_OPTIONS = [
@@ -116,7 +117,12 @@ export default function SettingsScreen() {
 
   const [loading, setLoading] = useState(false);
   const [soundEnabled, setSoundEnabledState] = useState(getSoundEnabled());
-  
+
+  // 主题设置
+  const [showThemeModal, setShowThemeModal] = useState(false);
+  const [currentThemeStyle, setCurrentThemeStyle] = useState<ThemeStyle>('pink');
+  const [currentColorScheme, setCurrentColorScheme] = useState<ColorSchemeChoice>('follow-system');
+
   // 未读反馈状态
   const [hasUnreadFeedback, setHasUnreadFeedback] = useState(false);
 
@@ -179,7 +185,34 @@ export default function SettingsScreen() {
     };
     loadSoundSetting();
     calculateCacheSize();
+    loadThemeSettings();
   }, []);
+
+  // 加载主题设置
+  const loadThemeSettings = async () => {
+    const [savedScheme, savedStyle] = await Promise.all([
+      AsyncStorage.getItem('user_color_scheme'),
+      AsyncStorage.getItem('user_theme_style'),
+    ]);
+    if (savedScheme) setCurrentColorScheme(savedScheme as ColorSchemeChoice);
+    if (savedStyle) setCurrentThemeStyle(savedStyle as ThemeStyle);
+  };
+
+  // 选择主题风格
+  const handleSelectThemeStyle = async (style: ThemeStyle) => {
+    setCurrentThemeStyle(style);
+    await setThemeStyle(style);
+    // 强制重新加载页面以应用新主题
+    router.replace('/settings');
+  };
+
+  // 选择颜色方案
+  const handleSelectColorScheme = async (scheme: ColorSchemeChoice) => {
+    setCurrentColorScheme(scheme);
+    await setColorScheme(scheme);
+    // 强制重新加载页面以应用新主题
+    router.replace('/settings');
+  };
 
   // 进入页面时检查未读反馈
   useFocusEffect(
@@ -506,6 +539,126 @@ export default function SettingsScreen() {
     );
   };
 
+  // 主题预览卡片
+  const renderThemePreviewCard = (style: ThemeStyle) => {
+    const themeColors = Colors[style];
+    const lightColors = themeColors.light;
+    const isSelected = currentThemeStyle === style;
+
+    return (
+      <TouchableOpacity
+        key={style}
+        style={[
+          styles.themePreviewCard,
+          isSelected && styles.themePreviewCardSelected,
+        ]}
+        onPress={() => handleSelectThemeStyle(style)}
+      >
+        <View
+          style={[
+            styles.themePreviewHeader,
+            { backgroundColor: lightColors.primary },
+          ]}
+        />
+        <View style={styles.themePreviewBody}>
+          <View
+            style={[
+              styles.themePreviewContent,
+              { backgroundColor: lightColors.backgroundDefault },
+            ]}
+          >
+            <View
+              style={[
+                styles.themePreviewCardTitle,
+                { backgroundColor: lightColors.backgroundTertiary },
+              ]}
+            />
+            <View
+              style={[
+                styles.themePreviewText,
+                { backgroundColor: lightColors.border },
+              ]}
+            />
+          </View>
+        </View>
+        {isSelected && (
+          <View style={[styles.themeSelectedBadge, { backgroundColor: lightColors.primary }]}>
+            <FontAwesome6 name="check" size={16} color="#FFFFFF" />
+          </View>
+        )}
+      </TouchableOpacity>
+    );
+  };
+
+  // 主题选择弹窗
+  const renderThemeModal = () => (
+    <Modal
+      visible={showThemeModal}
+      transparent
+      animationType="slide"
+      onRequestClose={() => setShowThemeModal(false)}
+    >
+      <Pressable style={styles.modalOverlay} onPress={() => setShowThemeModal(false)}>
+        <View style={[styles.modalContent, styles.themeModalContent]}>
+          <View style={styles.themeModalHeader}>
+            <ThemedText style={styles.modalTitle}>主题风格</ThemedText>
+            <TouchableOpacity onPress={() => setShowThemeModal(false)}>
+              <FontAwesome6 name="xmark" size={24} color={theme.textPrimary} />
+            </TouchableOpacity>
+          </View>
+
+          {/* 主题预览 */}
+          <View style={styles.themePreviewContainer}>
+            <ThemedText style={styles.themePreviewTitle}>选择主题风格</ThemedText>
+            <View style={styles.themePreviewGrid}>
+              {renderThemePreviewCard('pink')}
+              {renderThemePreviewCard('blue')}
+              {renderThemePreviewCard('green')}
+              {renderThemePreviewCard('gray')}
+            </View>
+          </View>
+
+          {/* 颜色方案选择 */}
+          <View style={styles.colorSchemeSection}>
+            <ThemedText style={styles.themePreviewTitle}>颜色方案</ThemedText>
+            <View style={styles.colorSchemeOptions}>
+              {(['follow-system', 'light', 'dark'] as ColorSchemeChoice[]).map((scheme) => (
+                <TouchableOpacity
+                  key={scheme}
+                  style={[
+                    styles.colorSchemeOption,
+                    currentColorScheme === scheme && styles.colorSchemeOptionSelected,
+                  ]}
+                  onPress={() => handleSelectColorScheme(scheme)}
+                >
+                  <FontAwesome6
+                    name={
+                      scheme === 'follow-system'
+                        ? 'circle-half-stroke'
+                        : scheme === 'light'
+                        ? 'sun'
+                        : 'moon'
+                    }
+                    size={20}
+                    color={currentColorScheme === scheme ? theme.primary : theme.textSecondary}
+                  />
+                  <ThemedText
+                    style={[
+                      styles.colorSchemeText,
+                      currentColorScheme === scheme && styles.colorSchemeTextSelected,
+                    ]}
+                  >
+                    {scheme === 'follow-system' ? '跟随系统' : scheme === 'light' ? '浅色' : '深色'}
+                  </ThemedText>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        </View>
+      </Pressable>
+    </Modal>
+  );
+
   // 协议弹窗
   const renderAgreementModal = () => (
     <Modal
@@ -639,6 +792,26 @@ export default function SettingsScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* 主题设置 */}
+        <TouchableOpacity style={styles.menuItem} onPress={() => setShowThemeModal(true)}>
+          <View style={styles.menuItemLeft}>
+            <FontAwesome6 name="palette" size={18} color="#666" />
+            <ThemedText style={styles.menuItemText}>主题风格</ThemedText>
+          </View>
+          <View style={styles.menuItemRight}>
+            <View
+              style={[
+                styles.themePreviewDot,
+                {
+                  backgroundColor: Colors[currentThemeStyle].light.primary,
+                  borderColor: Colors[currentThemeStyle].light.border,
+                },
+              ]}
+            />
+            <FontAwesome6 name="chevron-right" size={14} color="#999" />
+          </View>
+        </TouchableOpacity>
+
 
         {/* 其他设置 */}
         <View style={styles.section}>
@@ -713,6 +886,7 @@ export default function SettingsScreen() {
 
       {/* 弹窗 */}
       {renderAgreementModal()}
+      {renderThemeModal()}
     </Screen>
   );
 }

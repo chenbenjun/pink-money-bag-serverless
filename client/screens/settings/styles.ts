@@ -320,5 +320,119 @@ export const createStyles = (theme: Theme) => {
       color: '#FFFFFF',
       fontWeight: '600',
     },
+    // 主题预览相关样式
+    themePreviewDot: {
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      borderWidth: 2,
+    },
+    // 主题弹窗样式
+    themeModalContent: {
+      maxWidth: 380,
+      maxHeight: '85%',
+      padding: Spacing.lg,
+    },
+    themeModalHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: Spacing.lg,
+    },
+    themePreviewContainer: {
+      marginBottom: Spacing.xl,
+    },
+    themePreviewTitle: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: theme.textPrimary,
+      marginBottom: Spacing.md,
+    },
+    themePreviewGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: Spacing.md,
+      justifyContent: 'space-between',
+    },
+    themePreviewCard: {
+      width: '48%',
+      aspectRatio: 0.8,
+      backgroundColor: '#FFFFFF',
+      borderRadius: 12,
+      borderWidth: 2,
+      borderColor: '#E0E0E0',
+      overflow: 'hidden',
+    },
+    themePreviewCardSelected: {
+      borderColor: theme.primary,
+      borderWidth: 3,
+    },
+    themePreviewHeader: {
+      height: '30%',
+    },
+    themePreviewBody: {
+      flex: 1,
+      padding: Spacing.sm,
+    },
+    themePreviewContent: {
+      flex: 1,
+      borderRadius: 6,
+      padding: Spacing.sm,
+      gap: Spacing.sm,
+    },
+    themePreviewCardTitle: {
+      height: 12,
+      borderRadius: 4,
+      width: '60%',
+      marginBottom: Spacing.xs,
+    },
+    themePreviewText: {
+      height: 8,
+      borderRadius: 4,
+      width: '80%',
+    },
+    themeSelectedBadge: {
+      position: 'absolute',
+      top: 8,
+      right: 8,
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    // 颜色方案选择样式
+    colorSchemeSection: {
+      paddingBottom: Spacing.md,
+    },
+    colorSchemeOptions: {
+      flexDirection: 'row',
+      gap: Spacing.md,
+    },
+    colorSchemeOption: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: Spacing.sm,
+      paddingVertical: Spacing.md,
+      borderRadius: 10,
+      backgroundColor: '#F5F5F5',
+      borderWidth: 2,
+      borderColor: 'transparent',
+    },
+    colorSchemeOptionSelected: {
+      borderColor: theme.primary,
+      backgroundColor: `${theme.primary}15`,
+    },
+    colorSchemeText: {
+      fontSize: 13,
+      color: theme.textSecondary,
+      fontWeight: '500',
+    },
+    colorSchemeTextSelected: {
+      color: theme.primary,
+      fontWeight: '600',
+    },
   });
 };
