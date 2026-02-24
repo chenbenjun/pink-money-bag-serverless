@@ -9,6 +9,7 @@ import {
   updateUserSchema,
   updatePasswordSchema,
 } from "../storage/database/shared/schema.js";
+import { getDefaultCategories } from "../utils/defaultCategories.js";
 
 const router = express.Router();
 
@@ -136,7 +137,7 @@ router.get("/:id", async (req, res) => {
 router.post("/", async (req, res) => {
   try {
     const validatedData = insertUserSchema.parse(req.body);
-    
+
     // 检查用户名是否已存在
     const client = getSupabaseClient();
     const { data: existingUser } = await client
@@ -164,6 +165,23 @@ router.post("/", async (req, res) => {
       .single();
 
     if (error) throw error;
+
+    // 为新用户创建默认分类
+    try {
+      const defaultCategories = getDefaultCategories();
+      const categoriesToInsert = defaultCategories.map((cat) => ({
+        name: cat.name,
+        icon: cat.icon,
+        color: cat.color,
+        type: cat.type,
+        user_id: data.id,
+      }));
+
+      await client.from("categories").insert(categoriesToInsert);
+    } catch (categoryError) {
+      // 默认分类创建失败不影响用户注册，只记录日志
+      console.error("创建默认分类失败:", categoryError);
+    }
 
     // 移除密码字段
     const { password, ...userWithoutPassword } = data;
