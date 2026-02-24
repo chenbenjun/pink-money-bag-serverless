@@ -690,6 +690,14 @@ export default function SettingsScreen() {
           </View>
         )}
 
+        {/* 调试信息 - 显示当前用户状态 */}
+        <View style={styles.section}>
+          <ThemedText style={{ fontSize: 12, color: '#999', padding: 10 }}>
+            当前用户: {currentUser?.name || '未登录'}
+            {'\n'}is_admin: {currentUser?.is_admin ? '是' : '否'}
+          </ThemedText>
+        </View>
+
         {/* 退出登录 - 粉红底高亮 */}
         <View style={styles.section}>
           <TouchableOpacity 
