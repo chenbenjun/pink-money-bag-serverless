@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   View,
   TouchableOpacity,
@@ -7,20 +7,23 @@ import {
   Modal,
   Pressable,
   Image,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
-import { TextInput } from 'react-native';
 import { FontAwesome6 } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useTheme } from '@/hooks/useTheme';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 import { ThemedText } from '@/components/ThemedText';
+import { ThemedView } from '@/components/ThemedView';
 import { useAuth } from '@/contexts/AuthContext';
 import { createFormDataFile } from '@/utils';
 import { Spacing, BorderRadius } from '@/constants/theme';
 import { StyleSheet } from 'react-native';
 
-// 3x4 = 12个预设头像
+// 12个预设头像
 const AVATAR_OPTIONS = [
   { name: 'cat', label: '猫咪' },
   { name: 'dog', label: '小狗' },
@@ -43,10 +46,22 @@ export default function AccountScreen() {
   const styles = useMemo(() => createStyles(theme), [theme]);
 
   const [loading, setLoading] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
 
-  // 编辑状态
-  const [editingField, setEditingField] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState('');
+  // 编辑状态 - 存储所有字段的编辑值
+  const [editForm, setEditForm] = useState({
+    nickname: currentUser?.nickname || '',
+    bio: currentUser?.bio || '',
+    age: currentUser?.age?.toString() || '',
+    gender: currentUser?.gender || '',
+  });
+
+  // 头像相关
+  const [avatar, setAvatar] = useState(currentUser?.avatar || '');
+  const [avatarType, setAvatarType] = useState(currentUser?.avatar_type || 'preset');
+  const [avatarUrl, setAvatarUrl] = useState(currentUser?.avatar_url || '');
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
+  const [showPresetAvatarModal, setShowPresetAvatarModal] = useState(false);
 
   // 密码修改
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -54,55 +69,35 @@ export default function AccountScreen() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  // 头像选择
-  const [showAvatarModal, setShowAvatarModal] = useState(false);
+  // 检查是否有修改
+  const checkHasChanges = useCallback((newForm: typeof editForm, newAvatar?: string, newAvatarType?: string) => {
+    const formChanged = 
+      newForm.nickname !== (currentUser?.nickname || '') ||
+      newForm.bio !== (currentUser?.bio || '') ||
+      newForm.age !== (currentUser?.age?.toString() || '') ||
+      newForm.gender !== (currentUser?.gender || '');
+    
+    const avatarChanged = newAvatar !== undefined 
+      ? newAvatar !== currentUser?.avatar || newAvatarType !== currentUser?.avatar_type
+      : avatar !== currentUser?.avatar || avatarType !== currentUser?.avatar_type;
+    
+    setHasChanges(formChanged || avatarChanged);
+  }, [currentUser, avatar, avatarType]);
 
-  // 保存字段
-  const handleSaveField = async (field: string) => {
-    if (!currentUser) return;
-    setLoading(true);
-
-    const updates: any = {};
-    switch (field) {
-      case 'nickname':
-        updates.nickname = editValue.trim() || undefined;
-        break;
-      case 'age':
-        updates.age = editValue ? parseInt(editValue, 10) : undefined;
-        break;
-      case 'gender':
-        updates.gender = editValue as 'male' | 'female';
-        break;
-      case 'bio':
-        updates.bio = editValue.trim() || undefined;
-        break;
-    }
-
-    const success = await updateUser(currentUser.id, updates);
-    setLoading(false);
-    if (success) {
-      setEditingField(null);
-      Alert.alert('成功', '已保存');
-    } else {
-      Alert.alert('失败', '保存失败，请重试');
-    }
+  // 更新表单字段
+  const updateField = (field: keyof typeof editForm, value: string) => {
+    const newForm = { ...editForm, [field]: value };
+    setEditForm(newForm);
+    checkHasChanges(newForm);
   };
 
-  // 保存头像（预设）
-  const handleSaveAvatar = async (avatar: string) => {
-    if (!currentUser) return;
-    setLoading(true);
-    const success = await updateUser(currentUser.id, { 
-      avatar,
-      avatar_type: 'preset'
-    });
-    setLoading(false);
-    if (success) {
-      setShowAvatarModal(false);
-      Alert.alert('成功', '头像已更新');
-    } else {
-      Alert.alert('失败', '更新失败，请重试');
-    }
+  // 选择预设头像
+  const handleSelectPresetAvatar = (avatarName: string) => {
+    setAvatar(avatarName);
+    setAvatarType('preset');
+    setAvatarUrl('');
+    setShowPresetAvatarModal(false);
+    checkHasChanges(editForm, avatarName, 'preset');
   };
 
   // 拍照
@@ -121,7 +116,6 @@ export default function AccountScreen() {
     });
 
     if (!result.canceled && result.assets && result.assets[0]) {
-      // 直接使用系统编辑后的图片上传
       await uploadAvatar(result.assets[0].uri);
     }
   };
@@ -142,7 +136,6 @@ export default function AccountScreen() {
     });
 
     if (!result.canceled && result.assets && result.assets[0]) {
-      // 直接使用系统编辑后的图片上传
       await uploadAvatar(result.assets[0].uri);
     }
   };
@@ -169,13 +162,11 @@ export default function AccountScreen() {
 
       if (response.ok) {
         const data = await response.json();
-        const success = await updateUser(currentUser.id, {
-          avatar_url: data.url,
-          avatar_type: 'custom'
-        });
-        if (success) {
-          Alert.alert('成功', '头像已更新');
-        }
+        setAvatarUrl(data.url);
+        setAvatarType('custom');
+        setAvatar('');
+        checkHasChanges(editForm, '', 'custom');
+        Alert.alert('成功', '头像已更新，记得点击保存按钮保存更改');
       } else {
         Alert.alert('失败', '头像上传失败');
       }
@@ -184,6 +175,62 @@ export default function AccountScreen() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // 批量保存所有更改
+  const handleSaveAll = async () => {
+    if (!currentUser) return;
+    
+    setLoading(true);
+    
+    const updates: any = {};
+    
+    // 只提交有变化的字段
+    if (editForm.nickname !== (currentUser.nickname || '')) {
+      updates.nickname = editForm.nickname.trim() || undefined;
+    }
+    if (editForm.bio !== (currentUser.bio || '')) {
+      updates.bio = editForm.bio.trim() || undefined;
+    }
+    if (editForm.age !== (currentUser.age?.toString() || '')) {
+      updates.age = editForm.age ? parseInt(editForm.age, 10) : undefined;
+    }
+    if (editForm.gender !== (currentUser.gender || '')) {
+      updates.gender = editForm.gender as 'male' | 'female' || undefined;
+    }
+    if (avatar !== currentUser.avatar) {
+      updates.avatar = avatar;
+    }
+    if (avatarType !== currentUser.avatar_type) {
+      updates.avatar_type = avatarType;
+    }
+    if (avatarUrl !== currentUser.avatar_url) {
+      updates.avatar_url = avatarUrl;
+    }
+
+    const success = await updateUser(currentUser.id, updates);
+    setLoading(false);
+    
+    if (success) {
+      setHasChanges(false);
+      Alert.alert('成功', '资料已保存');
+    } else {
+      Alert.alert('失败', '保存失败，请重试');
+    }
+  };
+
+  // 取消所有更改
+  const handleCancel = () => {
+    setEditForm({
+      nickname: currentUser?.nickname || '',
+      bio: currentUser?.bio || '',
+      age: currentUser?.age?.toString() || '',
+      gender: currentUser?.gender || '',
+    });
+    setAvatar(currentUser?.avatar || '');
+    setAvatarType(currentUser?.avatar_type || 'preset');
+    setAvatarUrl(currentUser?.avatar_url || '');
+    setHasChanges(false);
   };
 
   // 修改密码
@@ -282,132 +329,35 @@ export default function AccountScreen() {
     );
   };
 
-  // 编辑弹窗
-  const renderEditModal = () => {
-    if (!editingField) return null;
-
-    const titles: Record<string, string> = {
-      nickname: '修改昵称',
-      age: '修改年龄',
-      gender: '修改性别',
-      bio: '修改个性签名',
-    };
-
-    const placeholders: Record<string, string> = {
-      nickname: '请输入昵称',
-      age: '请输入年龄',
-      gender: '',
-      bio: '写下你的个性签名（最多140字）',
-    };
-
-    const maxLengths: Record<string, number> = {
-      nickname: 20,
-      age: 3,
-      gender: 0,
-      bio: 140,
-    };
-
-    const isBio = editingField === 'bio';
-
-    return (
-      <Modal
-        visible={!!editingField}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setEditingField(null)}
-      >
-        <Pressable style={styles.modalOverlay} onPress={() => setEditingField(null)}>
-          <View style={[styles.modalContent, isBio && styles.bioModalContent]}>
-            <ThemedText style={styles.modalTitle}>{titles[editingField]}</ThemedText>
-            
-            {editingField === 'gender' ? (
-              <View style={styles.genderOptions}>
-                <TouchableOpacity
-                  style={[styles.genderOption, editValue === 'male' && styles.genderOptionActive]}
-                  onPress={() => setEditValue('male')}
-                >
-                  <FontAwesome6 name="mars" size={20} color={editValue === 'male' ? '#FF69B4' : '#666'} />
-                  <ThemedText style={[styles.genderText, editValue === 'male' && styles.genderTextActive]}>男</ThemedText>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.genderOption, editValue === 'female' && styles.genderOptionActive]}
-                  onPress={() => setEditValue('female')}
-                >
-                  <FontAwesome6 name="venus" size={20} color={editValue === 'female' ? '#FF69B4' : '#666'} />
-                  <ThemedText style={[styles.genderText, editValue === 'female' && styles.genderTextActive]}>女</ThemedText>
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <>
-                <TextInput
-                  style={[styles.modalInput, isBio && styles.bioInput]}
-                  placeholder={placeholders[editingField]}
-                  placeholderTextColor="#999"
-                  value={editValue}
-                  onChangeText={setEditValue}
-                  keyboardType={editingField === 'age' ? 'number-pad' : 'default'}
-                  maxLength={maxLengths[editingField]}
-                  multiline={isBio}
-                  numberOfLines={isBio ? 4 : 1}
-                  textAlignVertical={isBio ? 'top' : 'center'}
-                />
-                {isBio && (
-                  <ThemedText style={styles.charCount}>
-                    {editValue.length}/140
-                  </ThemedText>
-                )}
-              </>
-            )}
-
-            <View style={styles.modalButtons}>
-              <TouchableOpacity style={styles.modalButtonCancel} onPress={() => setEditingField(null)}>
-                <ThemedText style={styles.modalButtonCancelText}>取消</ThemedText>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.modalButtonConfirm} onPress={() => handleSaveField(editingField)}>
-                <ThemedText style={styles.modalButtonConfirmText}>保存</ThemedText>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Pressable>
-      </Modal>
-    );
+  // 渲染头像预览
+  const renderAvatarPreview = () => {
+    if (avatarType === 'custom' && avatarUrl) {
+      return <Image source={{ uri: avatarUrl }} style={styles.avatarPreviewImage} />;
+    }
+    return <FontAwesome6 name={(avatar as any) || 'user'} size={32} color="#FF69B4" />;
   };
 
-  // 头像选择弹窗 - 底部弹出式
+  // 头像选择弹窗
   const renderAvatarModal = () => (
-    <Modal
-      visible={showAvatarModal}
-      transparent
-      animationType="slide"
-      onRequestClose={() => setShowAvatarModal(false)}
-    >
+    <Modal visible={showAvatarModal} transparent animationType="slide" onRequestClose={() => setShowAvatarModal(false)}>
       <Pressable style={avatarPickerStyles.overlay} onPress={() => setShowAvatarModal(false)}>
         <View style={avatarPickerStyles.container}>
-          {/* 保存按钮 */}
-          <TouchableOpacity 
-            style={avatarPickerStyles.saveButton}
-            onPress={() => setShowAvatarModal(false)}
-          >
+          <TouchableOpacity style={avatarPickerStyles.saveButton} onPress={() => setShowAvatarModal(false)}>
             <ThemedText style={avatarPickerStyles.saveButtonText}>保存</ThemedText>
           </TouchableOpacity>
           
-          {/* 选项区域 */}
           <View style={avatarPickerStyles.optionsContainer}>
             <ThemedText style={avatarPickerStyles.sectionTitle}>设置头像</ThemedText>
-            
             <TouchableOpacity style={avatarPickerStyles.option} onPress={handleTakePhoto}>
               <ThemedText style={avatarPickerStyles.optionText}>拍照</ThemedText>
             </TouchableOpacity>
-            
             <TouchableOpacity style={avatarPickerStyles.option} onPress={handlePickFromLibrary}>
               <ThemedText style={avatarPickerStyles.optionText}>从相册选择</ThemedText>
             </TouchableOpacity>
-            
             <TouchableOpacity 
               style={avatarPickerStyles.option}
               onPress={() => {
                 setShowAvatarModal(false);
-                // 打开预设头像选择
                 setTimeout(() => setShowPresetAvatarModal(true), 300);
               }}
             >
@@ -415,11 +365,7 @@ export default function AccountScreen() {
             </TouchableOpacity>
           </View>
           
-          {/* 取消按钮 */}
-          <TouchableOpacity 
-            style={avatarPickerStyles.cancelButton}
-            onPress={() => setShowAvatarModal(false)}
-          >
+          <TouchableOpacity style={avatarPickerStyles.cancelButton} onPress={() => setShowAvatarModal(false)}>
             <ThemedText style={avatarPickerStyles.cancelButtonText}>取消</ThemedText>
           </TouchableOpacity>
         </View>
@@ -428,45 +374,24 @@ export default function AccountScreen() {
   );
 
   // 预设头像选择弹窗
-  const [showPresetAvatarModal, setShowPresetAvatarModal] = useState(false);
-  
   const renderPresetAvatarModal = () => (
-    <Modal
-      visible={showPresetAvatarModal}
-      transparent
-      animationType="fade"
-      onRequestClose={() => setShowPresetAvatarModal(false)}
-    >
+    <Modal visible={showPresetAvatarModal} transparent animationType="fade" onRequestClose={() => setShowPresetAvatarModal(false)}>
       <Pressable style={styles.modalOverlay} onPress={() => setShowPresetAvatarModal(false)}>
         <View style={styles.avatarModalContent}>
           <ThemedText style={styles.modalTitle}>选择头像</ThemedText>
-          
-          {/* 3x4 预设头像网格 */}
           <View style={styles.avatarGrid}>
-            {AVATAR_OPTIONS.map((avatar) => (
+            {AVATAR_OPTIONS.map((item) => (
               <TouchableOpacity
-                key={avatar.name}
-                style={[
-                  styles.avatarOption,
-                  currentUser?.avatar === avatar.name && styles.avatarOptionActive,
-                ]}
-                onPress={() => handleSaveAvatar(avatar.name)}
+                key={item.name}
+                style={[styles.avatarOption, avatar === item.name && styles.avatarOptionActive]}
+                onPress={() => handleSelectPresetAvatar(item.name)}
               >
-                <FontAwesome6
-                  name={avatar.name as any}
-                  size={24}
-                  color={currentUser?.avatar === avatar.name ? '#FF69B4' : '#666'}
-                />
-                <ThemedText style={styles.avatarLabel}>{avatar.label}</ThemedText>
+                <FontAwesome6 name={item.name as any} size={24} color={avatar === item.name ? '#FF69B4' : '#666'} />
+                <ThemedText style={styles.avatarLabel}>{item.label}</ThemedText>
               </TouchableOpacity>
             ))}
           </View>
-
-          {/* 关闭按钮 */}
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={() => setShowPresetAvatarModal(false)}
-          >
+          <TouchableOpacity style={styles.closeButton} onPress={() => setShowPresetAvatarModal(false)}>
             <ThemedText style={styles.closeButtonText}>关闭</ThemedText>
           </TouchableOpacity>
         </View>
@@ -476,12 +401,7 @@ export default function AccountScreen() {
 
   // 密码修改弹窗
   const renderPasswordModal = () => (
-    <Modal
-      visible={showPasswordModal}
-      transparent
-      animationType="fade"
-      onRequestClose={() => setShowPasswordModal(false)}
-    >
+    <Modal visible={showPasswordModal} transparent animationType="fade" onRequestClose={() => setShowPasswordModal(false)}>
       <Pressable style={styles.modalOverlay} onPress={() => setShowPasswordModal(false)}>
         <View style={styles.modalContent}>
           <ThemedText style={styles.modalTitle}>修改密码</ThemedText>
@@ -522,159 +442,179 @@ export default function AccountScreen() {
     </Modal>
   );
 
-  // 渲染头像预览
-  const renderAvatarPreview = () => {
-    if (currentUser?.avatar_type === 'custom' && currentUser?.avatar_url) {
-      return (
-        <Image 
-          source={{ uri: currentUser.avatar_url }} 
-          style={styles.avatarPreviewImage}
-        />
-      );
-    }
-    return (
-      <FontAwesome6 
-        name={(currentUser?.avatar as any) || 'user'} 
-        size={32} 
-        color="#FF69B4" 
-      />
-    );
-  };
-
-  // 菜单项组件
-  const MenuItem = ({
-    icon,
-    title,
-    value,
-    onPress,
-    danger = false,
-  }: {
-    icon: string;
-    title: string;
-    value?: string;
-    onPress: () => void;
-    danger?: boolean;
-  }) => (
-    <TouchableOpacity
-      style={[styles.menuItem, danger && styles.menuItemDanger]}
-      onPress={onPress}
-    >
-      <View style={styles.menuItemLeft}>
-        <FontAwesome6 name={icon as any} size={18} color={danger ? '#FF6B6B' : '#666'} />
-        <ThemedText style={[styles.menuItemText, danger && styles.menuItemTextDanger]}>
-          {title}
-        </ThemedText>
-      </View>
-      <View style={styles.menuItemRight}>
-        {value && (
-          <ThemedText style={styles.menuItemValue} numberOfLines={1}>
-            {value}
-          </ThemedText>
-        )}
-        <FontAwesome6 name="chevron-right" size={14} color="#999" />
-      </View>
-    </TouchableOpacity>
-  );
-
   return (
     <Screen backgroundColor={theme.backgroundRoot} statusBarStyle={isDark ? 'light' : 'dark'}>
-      <ScrollView contentContainerStyle={styles.container}>
-        {/* 头部 */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <FontAwesome6 name="arrow-left" size={24} color={theme.textPrimary} />
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardView}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          {/* 头部 */}
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => router.back()}>
+              <FontAwesome6 name="arrow-left" size={24} color={theme.textPrimary} />
+            </TouchableOpacity>
+            <ThemedText style={styles.headerTitle}>账号管理</ThemedText>
+            <View style={{ width: 24 }} />
+          </View>
+
+          {/* 头像区域 */}
+          <TouchableOpacity style={styles.avatarSection} onPress={() => setShowAvatarModal(true)}>
+            <View style={styles.avatarContainer}>
+              {renderAvatarPreview()}
+            </View>
+            <ThemedText style={styles.avatarHint}>点击更换头像</ThemedText>
           </TouchableOpacity>
-          <ThemedText style={styles.headerTitle}>账号管理</ThemedText>
-          <View style={{ width: 24 }} />
-        </View>
 
-        {/* 头像区域 - 居中显示 */}
-        <TouchableOpacity 
-          style={styles.avatarSection}
-          onPress={() => setShowAvatarModal(true)}
-        >
-          <View style={styles.avatarContainer}>
-            {renderAvatarPreview()}
-          </View>
-          <ThemedText style={styles.avatarHint}>点击更换头像</ThemedText>
-        </TouchableOpacity>
-
-        {/* 账号信息列表 */}
-        <View style={styles.listContainer}>
-          {/* 账号名称 - 不可更改 */}
-          <View style={[styles.menuItem, styles.menuItemDisabled]}>
-            <View style={styles.menuItemLeft}>
-              <FontAwesome6 name="user" size={18} color="#999" />
-              <ThemedText style={[styles.menuItemText, styles.menuItemTextDisabled]}>
-                账号名称
-              </ThemedText>
+          {/* 编辑表单 */}
+          <View style={styles.formContainer}>
+            {/* 账号名称 - 不可更改 */}
+            <View style={styles.formItem}>
+              <View style={styles.formLabelRow}>
+                <FontAwesome6 name="user" size={16} color="#999" />
+                <ThemedText style={styles.formLabelDisabled}>账号名称</ThemedText>
+              </View>
+              <View style={styles.formInputDisabled}>
+                <ThemedText style={styles.formValueDisabled}>{currentUser?.name || '未设置'}</ThemedText>
+                <ThemedText style={styles.notEditableTag}>不可更改</ThemedText>
+              </View>
             </View>
-            <View style={styles.menuItemRight}>
-              <ThemedText style={[styles.menuItemValue, styles.menuItemValueDisabled]} numberOfLines={1}>
-                {currentUser?.name || '未设置'}
-              </ThemedText>
-              <ThemedText style={styles.notEditableTag}>不可更改</ThemedText>
+
+            {/* 昵称 */}
+            <View style={styles.formItem}>
+              <View style={styles.formLabelRow}>
+                <FontAwesome6 name="signature" size={16} color="#FF69B4" />
+                <ThemedText style={styles.formLabel}>昵称</ThemedText>
+              </View>
+              <TextInput
+                style={styles.formInput}
+                placeholder="请输入昵称"
+                placeholderTextColor="#999"
+                value={editForm.nickname}
+                onChangeText={(value) => updateField('nickname', value)}
+                maxLength={20}
+              />
+            </View>
+
+            {/* 个性签名 */}
+            <View style={styles.formItem}>
+              <View style={styles.formLabelRow}>
+                <FontAwesome6 name="pen-nib" size={16} color="#FF69B4" />
+                <ThemedText style={styles.formLabel}>个性签名</ThemedText>
+              </View>
+              <TextInput
+                style={[styles.formInput, styles.bioInput]}
+                placeholder="写下你的个性签名（最多140字）"
+                placeholderTextColor="#999"
+                value={editForm.bio}
+                onChangeText={(value) => updateField('bio', value)}
+                maxLength={140}
+                multiline
+                numberOfLines={3}
+                textAlignVertical="top"
+              />
+              <ThemedText style={styles.charCount}>{editForm.bio.length}/140</ThemedText>
+            </View>
+
+            {/* 年龄 */}
+            <View style={styles.formItem}>
+              <View style={styles.formLabelRow}>
+                <FontAwesome6 name="cake-candles" size={16} color="#FF69B4" />
+                <ThemedText style={styles.formLabel}>年龄</ThemedText>
+              </View>
+              <TextInput
+                style={styles.formInput}
+                placeholder="请输入年龄"
+                placeholderTextColor="#999"
+                value={editForm.age}
+                onChangeText={(value) => updateField('age', value.replace(/[^0-9]/g, ''))}
+                keyboardType="number-pad"
+                maxLength={3}
+              />
+            </View>
+
+            {/* 性别 */}
+            <View style={styles.formItem}>
+              <View style={styles.formLabelRow}>
+                <FontAwesome6 name="venus-mars" size={16} color="#FF69B4" />
+                <ThemedText style={styles.formLabel}>性别</ThemedText>
+              </View>
+              <View style={styles.genderRow}>
+                <TouchableOpacity
+                  style={[styles.genderBtn, editForm.gender === 'male' && styles.genderBtnActive]}
+                  onPress={() => updateField('gender', 'male')}
+                >
+                  <FontAwesome6 name="mars" size={18} color={editForm.gender === 'male' ? '#FFF' : '#666'} />
+                  <ThemedText style={[styles.genderBtnText, editForm.gender === 'male' && styles.genderBtnTextActive]}>男</ThemedText>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.genderBtn, editForm.gender === 'female' && styles.genderBtnActive]}
+                  onPress={() => updateField('gender', 'female')}
+                >
+                  <FontAwesome6 name="venus" size={18} color={editForm.gender === 'female' ? '#FFF' : '#666'} />
+                  <ThemedText style={[styles.genderBtnText, editForm.gender === 'female' && styles.genderBtnTextActive]}>女</ThemedText>
+                </TouchableOpacity>
+                {editForm.gender !== '' && (
+                  <TouchableOpacity
+                    style={styles.clearGenderBtn}
+                    onPress={() => updateField('gender', '')}
+                  >
+                    <FontAwesome6 name="xmark" size={14} color="#999" />
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+
+            {/* 修改密码 */}
+            <TouchableOpacity style={styles.menuItem} onPress={() => setShowPasswordModal(true)}>
+              <View style={styles.menuItemLeft}>
+                <FontAwesome6 name="lock" size={18} color="#666" />
+                <ThemedText style={styles.menuItemText}>修改密码</ThemedText>
+              </View>
+              <FontAwesome6 name="chevron-right" size={14} color="#999" />
+            </TouchableOpacity>
+
+            {/* 危险操作区域 */}
+            <View style={styles.dangerZone}>
+              <TouchableOpacity style={[styles.menuItem, styles.menuItemDanger]} onPress={handleClearAllData}>
+                <View style={styles.menuItemLeft}>
+                  <FontAwesome6 name="trash-can" size={18} color="#FF6B6B" />
+                  <ThemedText style={[styles.menuItemText, styles.menuItemTextDanger]}>清除数据</ThemedText>
+                </View>
+                <FontAwesome6 name="chevron-right" size={14} color="#FF6B6B" />
+              </TouchableOpacity>
+
+              <TouchableOpacity style={[styles.menuItem, styles.menuItemDanger]} onPress={handleDeleteAccount}>
+                <View style={styles.menuItemLeft}>
+                  <FontAwesome6 name="user-xmark" size={18} color="#FF6B6B" />
+                  <ThemedText style={[styles.menuItemText, styles.menuItemTextDanger]}>注销账号</ThemedText>
+                </View>
+                <FontAwesome6 name="chevron-right" size={14} color="#FF6B6B" />
+              </TouchableOpacity>
             </View>
           </View>
+        </ScrollView>
 
-          <MenuItem
-            icon="signature"
-            title="昵称"
-            value={currentUser?.nickname || '未设置'}
-            onPress={() => {
-              setEditValue(currentUser?.nickname || '');
-              setEditingField('nickname');
-            }}
-          />
-          <MenuItem
-            icon="pen-nib"
-            title="个性签名"
-            value={currentUser?.bio || '未设置'}
-            onPress={() => {
-              setEditValue(currentUser?.bio || '');
-              setEditingField('bio');
-            }}
-          />
-          <MenuItem
-            icon="cake-candles"
-            title="年龄"
-            value={currentUser?.age ? `${currentUser.age}岁` : '未设置'}
-            onPress={() => {
-              setEditValue(currentUser?.age?.toString() || '');
-              setEditingField('age');
-            }}
-          />
-          <MenuItem
-            icon="venus-mars"
-            title="性别"
-            value={currentUser?.gender === 'male' ? '男' : currentUser?.gender === 'female' ? '女' : '未设置'}
-            onPress={() => {
-              setEditValue(currentUser?.gender || '');
-              setEditingField('gender');
-            }}
-          />
-          <MenuItem
-            icon="lock"
-            title="修改密码"
-            onPress={() => setShowPasswordModal(true)}
-          />
-          <MenuItem
-            icon="trash-can"
-            title="清除数据"
-            danger
-            onPress={handleClearAllData}
-          />
-          <MenuItem
-            icon="user-xmark"
-            title="注销账号"
-            danger
-            onPress={handleDeleteAccount}
-          />
-        </View>
-      </ScrollView>
+        {/* 底部保存/取消按钮 */}
+        {hasChanges && (
+          <View style={styles.bottomBar}>
+            <TouchableOpacity style={styles.cancelBtn} onPress={handleCancel}>
+              <ThemedText style={styles.cancelBtnText}>取消</ThemedText>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.saveBtn, loading && styles.saveBtnDisabled]} 
+              onPress={handleSaveAll}
+              disabled={loading}
+            >
+              <ThemedText style={styles.saveBtnText}>
+                {loading ? '保存中...' : '保存更改'}
+              </ThemedText>
+            </TouchableOpacity>
+          </View>
+        )}
+      </KeyboardAvoidingView>
 
       {/* 弹窗 */}
-      {renderEditModal()}
       {renderAvatarModal()}
       {renderPresetAvatarModal()}
       {renderPasswordModal()}
@@ -743,9 +683,13 @@ const avatarPickerStyles = StyleSheet.create({
 });
 
 const createStyles = (theme: any) => StyleSheet.create({
-  container: {
+  keyboardView: {
+    flex: 1,
+  },
+  scrollContent: {
     flexGrow: 1,
     backgroundColor: '#FFF0F5',
+    paddingBottom: 100,
   },
   header: {
     flexDirection: 'row',
@@ -791,69 +735,175 @@ const createStyles = (theme: any) => StyleSheet.create({
     fontSize: 13,
     color: '#999',
   },
-  // 列表区域
-  listContainer: {
+  // 表单区域
+  formContainer: {
     backgroundColor: '#FFF5F8',
     borderRadius: 16,
     marginHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
+    padding: Spacing.md,
   },
+  formItem: {
+    marginBottom: Spacing.lg,
+  },
+  formLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginBottom: Spacing.sm,
+  },
+  formLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333',
+  },
+  formLabelDisabled: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#999',
+  },
+  formInput: {
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.md,
+    fontSize: 15,
+    color: '#333',
+    borderWidth: 1,
+    borderColor: '#FFE0EC',
+  },
+  formInputDisabled: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.md,
+  },
+  formValueDisabled: {
+    fontSize: 15,
+    color: '#666',
+  },
+  bioInput: {
+    height: 80,
+    textAlignVertical: 'top',
+    paddingTop: Spacing.md,
+  },
+  charCount: {
+    fontSize: 12,
+    color: '#999',
+    textAlign: 'right',
+    marginTop: 4,
+  },
+  notEditableTag: {
+    fontSize: 11,
+    color: '#999',
+    backgroundColor: '#E8E8E8',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  // 性别选择
+  genderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  genderBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    backgroundColor: '#FFF',
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.xl,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FFE0EC',
+  },
+  genderBtnActive: {
+    backgroundColor: '#FF69B4',
+    borderColor: '#FF69B4',
+  },
+  genderBtnText: {
+    fontSize: 15,
+    color: '#666',
+    fontWeight: '500',
+  },
+  genderBtnTextActive: {
+    color: '#FFF',
+  },
+  clearGenderBtn: {
+    padding: Spacing.sm,
+  },
+  // 菜单项
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.md,
     borderBottomWidth: 0.5,
     borderBottomColor: '#F0E0E5',
-  },
-  menuItemDanger: {
-    borderBottomColor: '#FFE5E5',
   },
   menuItemLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.md,
   },
-  menuItemRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
   menuItemText: {
     fontSize: 15,
     color: '#333',
     fontWeight: '500',
   },
+  menuItemDanger: {
+    borderBottomColor: '#FFE5E5',
+  },
   menuItemTextDanger: {
     color: '#FF6B6B',
   },
-  menuItemValue: {
-    fontSize: 14,
-    color: '#999',
-    maxWidth: 120,
-    textAlign: 'right',
+  // 危险区域
+  dangerZone: {
+    marginTop: Spacing.xl,
+    paddingTop: Spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: '#F0E0E5',
   },
-  // 不可编辑项样式
-  menuItemDisabled: {
-    backgroundColor: '#FAFAFA',
+  // 底部保存栏
+  bottomBar: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+    paddingBottom: Spacing.xl + (Platform.OS === 'ios' ? 20 : 0),
+    backgroundColor: '#FFF',
+    borderTopWidth: 1,
+    borderTopColor: '#FFE0EC',
   },
-  menuItemTextDisabled: {
-    color: '#999',
+  cancelBtn: {
+    flex: 1,
+    paddingVertical: Spacing.md,
+    borderRadius: 12,
+    backgroundColor: '#F5F5F5',
+    alignItems: 'center',
   },
-  menuItemValueDisabled: {
+  cancelBtnText: {
+    fontSize: 16,
     color: '#666',
+    fontWeight: '500',
   },
-  notEditableTag: {
-    fontSize: 11,
-    color: '#999',
-    backgroundColor: '#F0F0F0',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    marginLeft: 8,
+  saveBtn: {
+    flex: 2,
+    paddingVertical: Spacing.md,
+    borderRadius: 12,
+    backgroundColor: '#FF69B4',
+    alignItems: 'center',
+  },
+  saveBtnDisabled: {
+    backgroundColor: '#FFB6C1',
+  },
+  saveBtnText: {
+    fontSize: 16,
+    color: '#FFF',
+    fontWeight: '600',
   },
   // 弹窗样式
   modalOverlay: {
@@ -869,16 +919,6 @@ const createStyles = (theme: any) => StyleSheet.create({
     padding: Spacing.xl,
     width: '100%',
     maxWidth: 320,
-  },
-  bioModalContent: {
-    maxWidth: 340,
-  },
-  avatarModalContent: {
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: Spacing.lg,
-    width: '90%',
-    maxWidth: 340,
   },
   modalTitle: {
     fontSize: 18,
@@ -896,18 +936,6 @@ const createStyles = (theme: any) => StyleSheet.create({
     fontSize: 15,
     color: theme.textPrimary,
     marginBottom: Spacing.md,
-  },
-  bioInput: {
-    height: 100,
-    textAlignVertical: 'top',
-    paddingTop: Spacing.md,
-  },
-  charCount: {
-    fontSize: 12,
-    color: '#999',
-    textAlign: 'right',
-    marginBottom: Spacing.md,
-    marginTop: -Spacing.sm,
   },
   modalButtons: {
     flexDirection: 'row',
@@ -938,36 +966,14 @@ const createStyles = (theme: any) => StyleSheet.create({
     color: 'white',
     fontWeight: '500',
   },
-  // 性别选项
-  genderOptions: {
-    flexDirection: 'row',
-    gap: Spacing.md,
-    marginBottom: Spacing.lg,
+  // 头像弹窗
+  avatarModalContent: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: Spacing.lg,
+    width: '90%',
+    maxWidth: 340,
   },
-  genderOption: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.sm,
-    paddingVertical: Spacing.md,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-  },
-  genderOptionActive: {
-    borderColor: '#FF69B4',
-    backgroundColor: '#FFF0F5',
-  },
-  genderText: {
-    fontSize: 15,
-    color: '#666',
-  },
-  genderTextActive: {
-    color: '#FF69B4',
-    fontWeight: '500',
-  },
-  // 头像网格 - 3x4布局
   avatarGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -994,29 +1000,11 @@ const createStyles = (theme: any) => StyleSheet.create({
     color: '#666',
     marginTop: 4,
   },
-  customAvatarButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.sm,
-    paddingVertical: Spacing.md,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#FF69B4',
-    borderStyle: 'dashed',
-    backgroundColor: '#FFF0F5',
-  },
-  customAvatarText: {
-    fontSize: 14,
-    color: '#FF69B4',
-    fontWeight: '500',
-  },
   closeButton: {
     paddingVertical: Spacing.md,
     borderRadius: 12,
     backgroundColor: '#F5F5F5',
     alignItems: 'center',
-    marginTop: Spacing.sm,
   },
   closeButtonText: {
     fontSize: 15,
