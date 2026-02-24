@@ -4,7 +4,13 @@ services:
     runtime: node
     plan: free
     rootDir: server
-    buildCommand: npm install && npm run build
+    buildCommand: |
+      echo "Installing dependencies..."
+      npm install
+      echo "Building application..."
+      npm run build
+      echo "Build completed!"
+      ls -la dist/
     startCommand: npm start
     envVars:
       - key: NODE_ENV
@@ -13,3 +19,4 @@ services:
         sync: false
       - key: SUPABASE_ANON_KEY
         sync: false
+    healthCheckPath: /api/v1/health
