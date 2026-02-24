@@ -98,9 +98,11 @@ export default function AddTransactionScreen() {
   }, [type]);
 
   const fetchCategories = async () => {
+    if (!currentUser?.id) return;
+
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/v1/categories?type=${type}`
+        `${API_BASE_URL}/api/v1/categories?type=${type}&user_id=${currentUser.id}`
       );
       const result = await response.json();
       if (result.data) {
@@ -268,6 +270,11 @@ export default function AddTransactionScreen() {
       return;
     }
 
+    if (!currentUser?.id) {
+      Alert.alert('错误', '用户未登录');
+      return;
+    }
+
     try {
       const response = await fetch(
         `${API_BASE_URL}/api/v1/categories`,
@@ -279,6 +286,7 @@ export default function AddTransactionScreen() {
             icon: newCategoryIcon,
             color: '#FF69B4',
             type,
+            user_id: currentUser.id,
           }),
         }
       );
@@ -304,6 +312,11 @@ export default function AddTransactionScreen() {
       return;
     }
 
+    if (!currentUser?.id) {
+      Alert.alert('错误', '用户未登录');
+      return;
+    }
+
     try {
       const response = await fetch(
         `${API_BASE_URL}/api/v1/categories/${editingCategory.id}`,
@@ -315,6 +328,7 @@ export default function AddTransactionScreen() {
             icon: newCategoryIcon,
             color: '#FF69B4',
             type,
+            user_id: currentUser.id,
           }),
         }
       );
@@ -344,9 +358,14 @@ export default function AddTransactionScreen() {
           text: '删除',
           style: 'destructive',
           onPress: async () => {
+            if (!currentUser?.id) {
+              Alert.alert('错误', '用户未登录');
+              return;
+            }
+
             try {
               const response = await fetch(
-                `${API_BASE_URL}/api/v1/categories/${category.id}`,
+                `${API_BASE_URL}/api/v1/categories/${category.id}?user_id=${currentUser.id}`,
                 { method: 'DELETE' }
               );
               

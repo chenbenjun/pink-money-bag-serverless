@@ -10,9 +10,11 @@ export const categories = pgTable("categories", {
 	icon: varchar({ length: 50 }),
 	color: varchar({ length: 20 }),
 	type: varchar({ length: 20 }).notNull(),
+	userId: varchar("user_id", { length: 36 }).notNull(),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 }, (table) => [
 	index("categories_type_idx").using("btree", table.type.asc().nullsLast().op("text_ops")),
+	index("categories_user_id_idx").using("btree", table.userId.asc().nullsLast().op("text_ops")),
 ]);
 
 export const transactions = pgTable("transactions", {
@@ -77,6 +79,7 @@ export const insertCategorySchema = z.object({
 	icon: z.string().max(50).optional(),
 	color: z.string().max(20).optional(),
 	type: z.enum(['income', 'expense']),
+	user_id: z.string().min(1),
 });
 
 export const insertUserSchema = z.object({

@@ -83,9 +83,11 @@ export default function TransactionDetailScreen() {
   }, [transaction]);
 
   const fetchCategories = async (type: string) => {
+    if (!currentUser?.id) return;
+
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/v1/categories?type=${type}`
+        `${API_BASE_URL}/api/v1/categories?type=${type}&user_id=${currentUser.id}`
       );
       const result = await response.json();
       if (result.data) {
@@ -125,7 +127,7 @@ export default function TransactionDetailScreen() {
 
       if (result.data) {
         // 获取分类信息
-        const categoryRes = await fetch(`${API_BASE_URL}/api/v1/categories`);
+        const categoryRes = await fetch(`${API_BASE_URL}/api/v1/categories?user_id=${currentUser.id}`);
         const categoryResult = await categoryRes.json();
         const category = categoryResult.data?.find((c: any) => c.id === result.data.category_id);
 

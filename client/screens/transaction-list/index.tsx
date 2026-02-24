@@ -213,9 +213,11 @@ export default function TransactionListScreen() {
 
   // 获取分类列表
   const fetchCategories = async () => {
+    if (!currentUser?.id) return;
+
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/v1/categories`
+        `${API_BASE_URL}/api/v1/categories?user_id=${currentUser.id}`
       );
       const result = await response.json();
       if (result.data) {
