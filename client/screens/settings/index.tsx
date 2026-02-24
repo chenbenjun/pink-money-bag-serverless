@@ -181,12 +181,11 @@ export default function SettingsScreen() {
     calculateCacheSize();
   }, []);
 
-  // 进入页面时检查未读反馈和刷新用户信息
+  // 进入页面时检查未读反馈
   useFocusEffect(
     React.useCallback(() => {
       checkUnreadFeedback();
-      // 刷新用户信息以获取最新的 is_admin 状态
-      refreshCurrentUser();
+      // 不再刷新用户信息，因为我们已经通过用户名判断权限了
     }, [currentUser?.id])
   );
 
@@ -438,9 +437,10 @@ export default function SettingsScreen() {
       { text: '取消', style: 'cancel' },
       {
         text: '退出',
-        onPress: async () => {
-          await logout();
+        onPress: () => {
+          // 先清除状态，立即跳转，后台执行清理
           router.replace('/login');
+          logout();
         },
       },
     ]);
