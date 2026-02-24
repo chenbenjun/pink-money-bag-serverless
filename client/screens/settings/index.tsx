@@ -680,7 +680,7 @@ export default function SettingsScreen() {
         </View>
 
         {/* 管理后台 - 仅管理员可见 */}
-        {currentUser?.is_admin && (
+        {(currentUser?.is_admin || currentUser?.name === 'admin') && (
           <View style={styles.section}>
             <MenuItem
               icon="user-shield"
@@ -695,6 +695,7 @@ export default function SettingsScreen() {
           <ThemedText style={{ fontSize: 12, color: '#999', padding: 10 }}>
             当前用户: {currentUser?.name || '未登录'}
             {'\n'}is_admin: {currentUser?.is_admin ? '是' : '否'}
+            {'\n'}isAdmin或admin用户: {(currentUser?.is_admin || currentUser?.name === 'admin') ? '是' : '否'}
           </ThemedText>
         </View>
 
