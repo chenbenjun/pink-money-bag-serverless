@@ -11,6 +11,7 @@ import {
 import { TextInput } from 'react-native';
 import { FontAwesome6 } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import * as Constants from 'expo-constants';
 import { useTheme } from '@/hooks/useTheme';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
@@ -145,6 +146,9 @@ export default function SettingsScreen() {
 
   // 缓存大小
   const [cacheSize, setCacheSize] = useState<string>('0 KB');
+
+  // 获取应用版本号
+  const appVersion = (Constants as any).expoConfig?.version || '2.0.1';
 
   // 检查未读反馈
   const checkUnreadFeedback = async () => {
@@ -434,12 +438,12 @@ export default function SettingsScreen() {
 
   // 关于页面
   const handleAbout = () => {
-    Alert.alert('关于粉红小钱袋', '版本：V1.0\n\n一款简洁可爱的个人记账应用，帮助您轻松管理日常收支。');
+    Alert.alert('关于粉红小钱袋', `版本：V${appVersion}\n\n一款简洁可爱的个人记账应用，帮助您轻松管理日常收支。`);
   };
 
   // 检查更新
   const handleCheckUpdate = () => {
-    Alert.alert('检查更新', '当前已是最新版本 V1.0');
+    Alert.alert('检查更新', `当前已是最新版本 V${appVersion}`);
   };
 
   // 意见反馈
@@ -848,7 +852,7 @@ export default function SettingsScreen() {
             icon="rotate"
             title="检查更新"
             onPress={handleCheckUpdate}
-            rightContent={<ThemedText style={styles.menuItemValue}>V1.0</ThemedText>}
+            rightContent={<ThemedText style={styles.menuItemValue}>V{appVersion}</ThemedText>}
           />
         </View>
 
