@@ -103,7 +103,7 @@ export const insertTransactionSchema = z.object({
 	amount: z.string().min(1),
 	type: z.enum(['income', 'expense']),
 	category_id: z.string().optional(),
-	description: z.string().optional(),
+	description: z.string().optional().nullable(),
 	transaction_date: z.string().optional(),
 	user_id: z.string().min(1),
 });
