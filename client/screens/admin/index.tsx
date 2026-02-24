@@ -34,14 +34,14 @@ export default function AdminScreen() {
 
   // 检查是否是管理员 - 使用 effect 处理重定向，避免条件 return 导致 hooks 问题
   useEffect(() => {
-    if (currentUser && !currentUser.is_admin) {
-      // 不是管理员，返回上一页
+    if (currentUser && !currentUser.is_admin && currentUser.name !== 'admin') {
+      // 不是管理员且不是 admin 用户，返回上一页
       router.back();
     }
   }, [currentUser, router]);
 
   // 如果未登录或不是管理员，显示空状态（但仍然渲染完整组件树）
-  const isAuthorized = currentUser?.is_admin === true;
+  const isAuthorized = currentUser?.is_admin === true || currentUser?.name === 'admin';
 
   // 重置密码相关状态
   const [resetModalVisible, setResetModalVisible] = useState(false);
