@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: pink-money-bag-serverless
+    runtime: node
+    plan: free
+    buildCommand: npm install -g pnpm && pnpm install && cd server && pnpm build
+    startCommand: cd server && pnpm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
