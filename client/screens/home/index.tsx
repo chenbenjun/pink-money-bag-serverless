@@ -277,6 +277,7 @@ export default function HomeScreen() {
   const menuItems = [
     { icon: 'gear', label: '设置', onPress: () => { setMenuVisible(false); router.push('/settings'); } },
     { icon: 'users', label: '切换用户', onPress: () => { setMenuVisible(false); router.push('/user-switch'); } },
+    { icon: 'flask', label: '测试反馈', onPress: () => { setMenuVisible(false); router.push('/test-feedback'); } },
     ...(currentUser?.is_admin ? [{ icon: 'user-shield', label: '管理后台', onPress: () => { setMenuVisible(false); router.push('/admin'); } }] : []),
     { icon: 'right-from-bracket', label: '退出登录', danger: true, onPress: () => { setMenuVisible(false); handleLogout(); } },
   ];

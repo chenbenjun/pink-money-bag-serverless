@@ -43,6 +43,12 @@ export default function TransactionDetailScreen() {
   const params = useSafeSearchParams<{ id: string }>();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
+  console.log('=== TransactionDetailScreen 渲染 ===');
+  console.log('params:', params);
+  console.log('params.id:', params.id);
+  console.log('currentUser:', currentUser ? `${currentUser.name} (${currentUser.id})` : 'null');
+  console.log('API_BASE_URL:', API_BASE_URL);
+
   const [transaction, setTransaction] = useState<Transaction | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -91,31 +97,51 @@ export default function TransactionDetailScreen() {
   };
 
   const fetchTransactionDetail = async () => {
-    if (!params.id || !currentUser?.id) return;
+    if (!params.id || !currentUser?.id) {
+      console.log('=== 交易详情加载失败 ===');
+      console.log('params.id:', params.id);
+      console.log('currentUser?.id:', currentUser?.id);
+      return;
+    }
+
+    console.log('=== 开始加载交易详情 ===');
+    console.log('API_BASE_URL:', API_BASE_URL);
+    console.log('交易ID:', params.id);
+    console.log('用户ID:', currentUser.id);
 
     setLoading(true);
+    setError(null);
+
     try {
       // 获取交易详情
-      const response = await fetch(`${API_BASE_URL}/api/v1/transactions/${params.id}?user_id=${currentUser.id}`);
+      const url = `${API_BASE_URL}/api/v1/transactions/${params.id}?user_id=${currentUser.id}`;
+      console.log('请求URL:', url);
+
+      const response = await fetch(url);
       const result = await response.json();
+
+      console.log('响应状态:', response.status);
+      console.log('响应数据:', result);
 
       if (result.data) {
         // 获取分类信息
         const categoryRes = await fetch(`${API_BASE_URL}/api/v1/categories`);
         const categoryResult = await categoryRes.json();
         const category = categoryResult.data?.find((c: any) => c.id === result.data.category_id);
-        
+
         setTransaction({
           ...result.data,
           category_name: category?.name || (result.data.type === 'income' ? '收入' : '支出'),
           category_icon: category?.icon || 'circle',
         });
+        console.log('=== 交易详情加载成功 ===');
       } else {
+        console.error('未找到交易记录');
         setError('未找到交易记录');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch transaction detail:', error);
-      setError('加载失败，请重试');
+      setError(`加载失败: ${error.message}`);
     } finally {
       setLoading(false);
     }

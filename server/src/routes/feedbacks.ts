@@ -37,7 +37,7 @@ router.post("/", async (req, res) => {
     if (error) throw error;
 
     res.json({ success: true, data });
-  } catch (error) {
+  } catch (error: any) {
     console.error("创建反馈失败:", error);
     if (error.name === "ZodError") {
       return res.status(400).json({ success: false, error: error.errors[0].message });
@@ -86,7 +86,7 @@ router.get("/", async (req, res) => {
     }));
 
     res.json({ success: true, data: result });
-  } catch (error) {
+  } catch (error: any) {
     console.error("获取反馈列表失败:", error);
     res.status(500).json({ success: false, error: "获取反馈列表失败" });
   }
@@ -106,7 +106,7 @@ router.get("/user/:userId", async (req, res) => {
     if (error) throw error;
 
     res.json({ success: true, data });
-  } catch (error) {
+  } catch (error: any) {
     console.error("获取用户反馈失败:", error);
     res.status(500).json({ success: false, error: "获取用户反馈失败" });
   }
@@ -134,7 +134,7 @@ router.put("/:id", async (req, res) => {
     }
 
     res.json({ success: true, data });
-  } catch (error) {
+  } catch (error: any) {
     console.error("更新反馈失败:", error);
     if (error.name === "ZodError") {
       return res.status(400).json({ success: false, error: error.errors[0].message });

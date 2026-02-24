@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>意见反馈 API 测试</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+    .section {
+      background: white;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .section h2 {
+      font-size: 18px;
+      color: #333;
+      margin-bottom: 15px;
+    }
+    .info-item {
+      margin-bottom: 10px;
+    }
+    .info-label {
+      font-weight: bold;
+      color: #666;
+      margin-right: 10px;
+    }
+    .info-value {
+      color: #333;
+      font-family: 'Courier New', monospace;
+    }
+    .info-value.error {
+      color: #e74c3c;
+    }
+    .info-value.success {
+      color: #27ae60;
+    }
+    button {
+      background-color: #007AFF;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+    textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      resize: vertical;
+      min-height: 200px;
+    }
+    .log-entry {
+      padding: 5px 0;
+      border-bottom: 1px solid #eee;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+    }
+    .log-entry.error {
+      color: #e74c3c;
+    }
+    .log-entry.success {
+      color: #27ae60;
+    }
+    .log-entry.info {
+      color: #3498db;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧪 意见反馈 API 测试工具</h1>
+
+    <!-- 环境信息 -->
+    <div class="section">
+      <h2>📊 环境信息</h2>
+      <div class="info-item">
+        <span class="info-label">API Base URL:</span>
+        <span class="info-value" id="apiBaseUrl">检测中...</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">完整反馈 API URL:</span>
+        <span class="info-value" id="fullApiUrl">检测中...</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">当前时间:</span>
+        <span class="info-value" id="currentTime"></span>
+      </div>
+    </div>
+
+    <!-- 步骤1: 测试健康检查 -->
+    <div class="section">
+      <h2>步骤 1: 测试健康检查</h2>
+      <button onclick="testHealthCheck()" id="healthCheckBtn">测试连接</button>
+      <div id="healthCheckResult" style="margin-top: 10px;"></div>
+    </div>
+
+    <!-- 步骤2: 获取用户列表 -->
+    <div class="section">
+      <h2>步骤 2: 获取用户列表</h2>
+      <button onclick="getUsers()" id="getUsersBtn" disabled>获取用户</button>
+      <div id="usersResult" style="margin-top: 10px;"></div>
+      <div id="selectedUser" style="margin-top: 10px;"></div>
+    </div>
+
+    <!-- 步骤3: 提交反馈 -->
+    <div class="section">
+      <h2>步骤 3: 提交反馈</h2>
+      <button onclick="submitFeedback()" id="submitBtn" disabled>提交反馈</button>
+      <div id="submitResult" style="margin-top: 10px;"></div>
+    </div>
+
+    <!-- 完整日志 -->
+    <div class="section">
+      <h2>📝 完整日志</h2>
+      <textarea id="logArea" readonly></textarea>
+    </div>
+  </div>
+
+  <script>
+    let API_BASE_URL = '';
+    let selectedUserId = null;
+
+    // 初始化
+    document.addEventListener('DOMContentLoaded', function() {
+      updateEnvInfo();
+      log('✅ 页面已加载', 'success');
+      log('🔍 检测环境变量...', 'info');
+
+      // 尝试从 window 对象获取环境变量（Expo Web 会注入到 window.expoConfig）
+      if (window.expoConfig && window.expoConfig.extra) {
+        API_BASE_URL = window.expoConfig.extra.EXPO_PUBLIC_BACKEND_BASE_URL;
+      }
+
+      // 如果没找到，尝试全局变量
+      if (!API_BASE_URL && window.EXPO_PUBLIC_BACKEND_BASE_URL) {
+        API_BASE_URL = window.EXPO_PUBLIC_BACKEND_BASE_URL;
+      }
+
+      if (API_BASE_URL) {
+        document.getElementById('apiBaseUrl').textContent = API_BASE_URL;
+        document.getElementById('apiBaseUrl').classList.add('success');
+        document.getElementById('fullApiUrl').textContent = `${API_BASE_URL}/api/v1/feedbacks`;
+        log(`✅ 环境变量已加载: ${API_BASE_URL}`, 'success');
+      } else {
+        document.getElementById('apiBaseUrl').textContent = '❌ 未找到环境变量';
+        document.getElementById('apiBaseUrl').classList.add('error');
+        document.getElementById('fullApiUrl').textContent = 'N/A';
+        log('❌ 未找到环境变量，将使用默认值', 'error');
+        API_BASE_URL = 'http://localhost:9091';
+        document.getElementById('apiBaseUrl').textContent = `${API_BASE_URL} (默认值)`;
+        document.getElementById('apiBaseUrl').classList.add('success');
+        document.getElementById('fullApiUrl').textContent = `${API_BASE_URL}/api/v1/feedbacks`;
+      }
+
+      updateCurrentTime();
+      setInterval(updateCurrentTime, 1000);
+    });
+
+    function updateEnvInfo() {
+      // 检查所有可能的环境变量位置
+      log('=== 环境变量检测 ===', 'info');
+
+      if (window.process && window.process.env) {
+        log(`window.process.env.EXPO_PUBLIC_BACKEND_BASE_URL: ${window.process.env.EXPO_PUBLIC_BACKEND_BASE_URL || 'undefined'}`, 'info');
+      }
+
+      if (window.expoConfig) {
+        log(`window.expoConfig: ${JSON.stringify(window.expoConfig, null, 2)}`, 'info');
+      }
+
+      if (window.EXPO_PUBLIC_BACKEND_BASE_URL) {
+        log(`window.EXPO_PUBLIC_BACKEND_BASE_URL: ${window.EXPO_PUBLIC_BACKEND_BASE_URL}`, 'info');
+      }
+
+      log('=== 检测完成 ===', 'info');
+    }
+
+    function updateCurrentTime() {
+      document.getElementById('currentTime').textContent = new Date().toLocaleString();
+    }
+
+    function log(message, type = 'info') {
+      const logArea = document.getElementById('logArea');
+      const timestamp = new Date().toLocaleTimeString();
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+      entry.textContent = `[${timestamp}] ${message}`;
+      logArea.appendChild(entry);
+      logArea.scrollTop = logArea.scrollHeight;
+      console.log(`[${type.toUpperCase()}] ${message}`);
+    }
+
+    async function testHealthCheck() {
+      const btn = document.getElementById('healthCheckBtn');
+      const resultDiv = document.getElementById('healthCheckResult');
+
+      btn.disabled = true;
+      btn.textContent = '测试中...';
+      resultDiv.innerHTML = '';
+
+      log(`📡 发送健康检查请求到: ${API_BASE_URL}/api/v1/health`, 'info');
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/v1/health`);
+        const data = await response.json();
+
+        log(`✅ 响应状态: ${response.status} ${response.statusText}`, 'info');
+        log(`📦 响应数据: ${JSON.stringify(data)}`, 'info');
+
+        if (response.ok) {
+          resultDiv.innerHTML = `<span class="info-value success">✅ 连接成功！状态码: ${response.status}</span>`;
+          log('✅ 健康检查通过', 'success');
+          document.getElementById('getUsersBtn').disabled = false;
+        } else {
+          resultDiv.innerHTML = `<span class="info-value error">❌ 请求失败，状态码: ${response.status}</span>`;
+          log('❌ 健康检查失败', 'error');
+        }
+      } catch (error) {
+        resultDiv.innerHTML = `<span class="info-value error">❌ 网络错误: ${error.message}</span>`;
+        log(`❌ 网络错误: ${error.message}`, 'error');
+        console.error(error);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '测试连接';
+      }
+    }
+
+    async function getUsers() {
+      const btn = document.getElementById('getUsersBtn');
+      const resultDiv = document.getElementById('usersResult');
+
+      btn.disabled = true;
+      btn.textContent = '获取中...';
+      resultDiv.innerHTML = '';
+
+      log(`👥 获取用户列表...`, 'info');
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/v1/users`);
+        const data = await response.json();
+
+        log(`✅ 响应状态: ${response.status}`, 'info');
+        log(`📦 用户数据: ${JSON.stringify(data)}`, 'info');
+
+        if (response.ok && data.success && data.data && data.data.length > 0) {
+          const user = data.data[0];
+          selectedUserId = user.id;
+          resultDiv.innerHTML = `<span class="info-value success">✅ 找到 ${data.data.length} 个用户</span>`;
+          document.getElementById('selectedUser').innerHTML = `
+            <span class="info-label">选择用户:</span>
+            <span class="info-value">${user.name} (${user.nickname}) - ID: ${user.id}</span>
+          `;
+          log(`✅ 选择用户: ${user.name} (ID: ${user.id})`, 'success');
+          document.getElementById('submitBtn').disabled = false;
+        } else {
+          resultDiv.innerHTML = `<span class="info-value error">❌ 获取用户失败</span>`;
+          log('❌ 获取用户失败', 'error');
+        }
+      } catch (error) {
+        resultDiv.innerHTML = `<span class="info-value error">❌ 网络错误: ${error.message}</span>`;
+        log(`❌ 网络错误: ${error.message}`, 'error');
+        console.error(error);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '获取用户';
+      }
+    }
+
+    async function submitFeedback() {
+      const btn = document.getElementById('submitBtn');
+      const resultDiv = document.getElementById('submitResult');
+
+      btn.disabled = true;
+      btn.textContent = '提交中...';
+      resultDiv.innerHTML = '';
+
+      const feedbackData = {
+        user_id: selectedUserId,
+        content: `网页测试反馈 - ${new Date().toISOString()}`,
+        contact: 'web-test@example.com'
+      };
+
+      log(`📝 提交反馈数据: ${JSON.stringify(feedbackData)}`, 'info');
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/v1/feedbacks`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(feedbackData),
+        });
+
+        const data = await response.json();
+
+        log(`✅ 响应状态: ${response.status}`, 'info');
+        log(`📦 响应数据: ${JSON.stringify(data)}`, 'info');
+
+        if (response.ok && (data.success || data.data)) {
+          resultDiv.innerHTML = `
+            <div>
+              <span class="info-value success">✅ 提交成功！</span><br>
+              <span class="info-value">反馈 ID: ${data.data.id}</span>
+            </div>
+          `;
+          log(`✅ 反馈提交成功！ID: ${data.data.id}`, 'success');
+        } else {
+          resultDiv.innerHTML = `<span class="info-value error">❌ 提交失败: ${data.error || '未知错误'}</span>`;
+          log('❌ 反馈提交失败', 'error');
+        }
+      } catch (error) {
+        resultDiv.innerHTML = `<span class="info-value error">❌ 网络错误: ${error.message}</span>`;
+        log(`❌ 网络错误: ${error.message}`, 'error');
+        console.error(error);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '提交反馈';
+      }
+    }
+  </script>
+</body>
+</html>

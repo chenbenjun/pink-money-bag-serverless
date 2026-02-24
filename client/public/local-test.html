@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>本地测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; text-align: center; }
+        h1 { color: #333; }
+        .success { color: green; font-weight: bold; font-size: 24px; margin: 20px 0; }
+        button { padding: 15px 30px; font-size: 16px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>🎉 本地测试成功！</h1>
+    <div class="success">服务运行正常</div>
+
+    <h2>测试后端API</h2>
+    <button onclick="testAPI()">测试API</button>
+    <div id="result" style="margin-top: 20px; font-family: monospace;"></div>
+
+    <script>
+        function testAPI() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '正在测试...';
+
+            fetch('http://localhost:9091/api/v1/health')
+                .then(res => res.text())
+                .then(data => {
+                    resultDiv.innerHTML = '<span style="color: green;">✅ API测试成功！</span><br>响应: ' + data;
+                })
+                .catch(err => {
+                    resultDiv.innerHTML = '<span style="color: red;">❌ API测试失败：</span> ' + err.message;
+                });
+        }
+    </script>
+</body>
+</html>

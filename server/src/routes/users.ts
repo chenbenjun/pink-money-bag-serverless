@@ -42,6 +42,44 @@ router.get("/", async (req, res) => {
   }
 });
 
+// 用户登录
+router.post("/login", async (req, res) => {
+  try {
+    const { name, password } = req.body;
+
+    if (!name || !password) {
+      return res.status(400).json({ success: false, error: "用户名和密码不能为空" });
+    }
+
+    const client = getSupabaseClient();
+    const { data: user, error } = await client
+      .from("users")
+      .select("*")
+      .eq("name", name)
+      .single();
+
+    if (error) {
+      if (error.code === "PGRST116") {
+        return res.status(401).json({ success: false, error: "用户名或密码错误" });
+      }
+      throw error;
+    }
+
+    // 验证密码
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ success: false, error: "用户名或密码错误" });
+    }
+
+    // 移除密码字段
+    const { password: _, ...userWithoutPassword } = user;
+    res.json({ success: true, data: userWithoutPassword });
+  } catch (error) {
+    console.error("登录失败:", error);
+    res.status(500).json({ success: false, error: "登录失败，请稍后重试" });
+  }
+});
+
 // 根据用户名获取单个用户（用于登录）
 router.get("/by-name/:name", async (req, res) => {
   try {
@@ -130,7 +168,7 @@ router.post("/", async (req, res) => {
     // 移除密码字段
     const { password, ...userWithoutPassword } = data;
     res.status(201).json({ success: true, data: userWithoutPassword });
-  } catch (error) {
+  } catch (error: any) {
     console.error("创建用户失败:", error);
     if (error.name === "ZodError") {
       return res.status(400).json({ success: false, error: error.errors[0].message });
@@ -163,7 +201,7 @@ router.put("/:id", async (req, res) => {
     // 移除密码字段
     const { password, ...userWithoutPassword } = data;
     res.json({ success: true, data: userWithoutPassword });
-  } catch (error) {
+  } catch (error: any) {
     console.error("更新用户失败:", error);
     if (error.name === "ZodError") {
       return res.status(400).json({ success: false, error: error.errors[0].message });
@@ -200,7 +238,7 @@ router.put("/:id/password", async (req, res) => {
     }
 
     res.json({ success: true, message: "密码更新成功" });
-  } catch (error) {
+  } catch (error: any) {
     console.error("更新密码失败:", error);
     if (error.name === "ZodError") {
       return res.status(400).json({ success: false, error: error.errors[0].message });

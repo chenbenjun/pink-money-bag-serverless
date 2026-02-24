@@ -4,44 +4,11 @@ import { insertTransactionSchema, updateTransactionSchema } from '@/storage/data
 
 const router = Router();
 
-// 获取所有交易记录
-router.get('/', async (req, res) => {
-	try {
-		const client = getSupabaseClient();
-		const { type, user_id, category_id } = req.query;
+// ============================================
+// GET 路由 - 按优先级排序
+// ============================================
 
-		// 必须提供 user_id
-		if (!user_id) {
-			return res.status(400).json({ error: 'user_id is required' });
-		}
-
-		let query = client
-			.from('transactions')
-			.select('*')
-			.eq('user_id', user_id)
-			.order('transaction_date', { ascending: false });
-
-		if (type && (type === 'income' || type === 'expense')) {
-			query = query.eq('type', type);
-		}
-
-		if (category_id) {
-			query = query.eq('category_id', category_id);
-		}
-
-		const { data, error } = await query;
-
-		if (error) {
-			return res.status(500).json({ error: error.message });
-		}
-
-		res.json({ data });
-	} catch (error) {
-		res.status(500).json({ error: 'Internal server error' });
-	}
-});
-
-// 获取统计数据
+// 1. 获取统计数据（静态路由，必须在 /:id 之前）
 router.get('/stats', async (req, res) => {
 	try {
 		const client = getSupabaseClient();
@@ -95,7 +62,44 @@ router.get('/stats', async (req, res) => {
 	}
 });
 
-// 获取单个交易记录
+// 2. 获取所有交易记录（根路径）
+router.get('/', async (req, res) => {
+	try {
+		const client = getSupabaseClient();
+		const { type, user_id, category_id } = req.query;
+
+		// 必须提供 user_id
+		if (!user_id) {
+			return res.status(400).json({ error: 'user_id is required' });
+		}
+
+		let query = client
+			.from('transactions')
+			.select('*')
+			.eq('user_id', user_id)
+			.order('transaction_date', { ascending: false });
+
+		if (type && (type === 'income' || type === 'expense')) {
+			query = query.eq('type', type);
+		}
+
+		if (category_id) {
+			query = query.eq('category_id', category_id);
+		}
+
+		const { data, error } = await query;
+
+		if (error) {
+			return res.status(500).json({ error: error.message });
+		}
+
+		res.json({ data });
+	} catch (error) {
+		res.status(500).json({ error: 'Internal server error' });
+	}
+});
+
+// 3. 获取单个交易记录（动态路由，必须放在最后）
 router.get('/:id', async (req, res) => {
 	try {
 		const { id } = req.params;
@@ -124,7 +128,10 @@ router.get('/:id', async (req, res) => {
 	}
 });
 
-// 创建交易记录
+// ============================================
+// POST 路由
+// ============================================
+
 router.post('/', async (req, res) => {
 	try {
 		const validatedData = insertTransactionSchema.parse(req.body);
@@ -149,7 +156,10 @@ router.post('/', async (req, res) => {
 	}
 });
 
-// 更新交易记录
+// ============================================
+// PUT 路由
+// ============================================
+
 router.put('/:id', async (req, res) => {
 	try {
 		const { id } = req.params;
@@ -187,7 +197,11 @@ router.put('/:id', async (req, res) => {
 	}
 });
 
-// 清除所有交易记录 - 必须在 /:id 之前定义
+// ============================================
+// DELETE 路由 - 按优先级排序
+// ============================================
+
+// 1. 清除所有交易记录（静态路由，必须在 /:id 之前）
 router.delete('/clear-all', async (req, res) => {
 	try {
 		const { user_id } = req.query;
@@ -213,7 +227,7 @@ router.delete('/clear-all', async (req, res) => {
 	}
 });
 
-// 删除交易记录
+// 2. 删除单个交易记录（动态路由，必须放在最后）
 router.delete('/:id', async (req, res) => {
 	try {
 		const { id } = req.params;

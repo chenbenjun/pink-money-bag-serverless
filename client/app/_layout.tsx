@@ -71,6 +71,9 @@ export default function RootLayout() {
               <Stack.Screen name="feedback" options={{ title: "意见反馈" }} />
               <Stack.Screen name="feedback-history" options={{ title: "历史反馈" }} />
               <Stack.Screen name="feedback-detail" options={{ title: "反馈详情" }} />
+              <Stack.Screen name="debug" options={{ title: "调试信息" }} />
+              <Stack.Screen name="test-feedback" options={{ title: "测试反馈" }} />
+              <Stack.Screen name="test-detail" options={{ title: "测试详情" }} />
             </Stack>
             <Toast />
           </GestureHandlerRootView>

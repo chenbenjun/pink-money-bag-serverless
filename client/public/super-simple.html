@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>超简单测试</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 22px;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .status.loading {
+            background: #cce5ff;
+            color: #004085;
+        }
+        .info {
+            background: #e3f2fd;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-size: 13px;
+            color: #0d47a1;
+            border-left: 4px solid #2196f3;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+        button:active {
+            transform: scale(0.98);
+        }
+        .data-display {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 13px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            font-family: monospace;
+        }
+        .amount {
+            font-size: 36px;
+            font-weight: bold;
+            color: #27ae60;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .amount.expense {
+            color: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 超简单测试页</h1>
+
+        <!-- 测试状态 -->
+        <div id="status" class="status loading">等待测试...</div>
+
+        <!-- 测试1：连接测试 -->
+        <div class="info">
+            测试1：连接后端服务器
+        </div>
+        <button onclick="testBackend()">🔗 测试后端连接</button>
+
+        <!-- 测试2：交易详情 -->
+        <div class="info">
+            测试2：获取交易详情
+        </div>
+        <button onclick="testTransactionDetail()">💰 获取交易详情</button>
+
+        <!-- 数据显示 -->
+        <div id="dataDisplay" class="data-display" style="display:none;"></div>
+
+        <!-- 金额显示 -->
+        <div id="amountDisplay" class="amount" style="display:none;"></div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://115.191.1.197:9091/api/v1';
+        const TRANSACTION_ID = '999b6f7a-99bd-45bd-9eaf-58376838cc58';
+        const USER_ID = '4b443ebf-a9c9-44bc-bbfb-733330cc9f9f';
+
+        function showStatus(message, type) {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = `status ${type}`;
+        }
+
+        function showData(data) {
+            const dataEl = document.getElementById('dataDisplay');
+            dataEl.textContent = JSON.stringify(data, null, 2);
+            dataEl.style.display = 'block';
+        }
+
+        function showAmount(amount) {
+            const amountEl = document.getElementById('amountDisplay');
+            amountEl.textContent = `¥${parseFloat(amount).toFixed(2)}`;
+            amountEl.style.display = 'block';
+        }
+
+        async function testBackend() {
+            showStatus('🔄 正在连接后端...', 'loading');
+
+            try {
+                console.log('测试后端连接...');
+                const response = await fetch(`${API_BASE_URL}/health`);
+                console.log('响应状态:', response.status);
+
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('响应数据:', data);
+                    showStatus('✅ 后端连接成功！', 'success');
+                    showData(data);
+                } else {
+                    throw new Error(`状态码: ${response.status}`);
+                }
+            } catch (error) {
+                console.error('连接失败:', error);
+                showStatus(`❌ 连接失败: ${error.message}`, 'error');
+            }
+        }
+
+        async function testTransactionDetail() {
+            showStatus('🔄 正在获取交易详情...', 'loading');
+
+            try {
+                console.log('获取交易详情...');
+                console.log('交易ID:', TRANSACTION_ID);
+                console.log('用户ID:', USER_ID);
+
+                const response = await fetch(
+                    `${API_BASE_URL}/transactions/${TRANSACTION_ID}?user_id=${USER_ID}`
+                );
+                console.log('响应状态:', response.status);
+
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('响应数据:', data);
+
+                    if (data.data) {
+                        showStatus('✅ 交易详情获取成功！', 'success');
+                        showData(data);
+                        showAmount(data.data.amount);
+                    } else {
+                        throw new Error('无数据返回');
+                    }
+                } else {
+                    const data = await response.json();
+                    throw new Error(data.error || `状态码: ${response.status}`);
+                }
+            } catch (error) {
+                console.error('获取失败:', error);
+                showStatus(`❌ 获取失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 页面加载时自动测试后端连接
+        window.addEventListener('load', () => {
+            console.log('页面加载完成');
+            setTimeout(testBackend, 500);
+        });
+    </script>
+</body>
+</html>

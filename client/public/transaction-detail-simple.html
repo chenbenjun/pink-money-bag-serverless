@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>交易详情页</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            margin-bottom: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .amount {
+            font-size: 48px;
+            font-weight: bold;
+            color: #27ae60;
+            margin: 20px 0;
+        }
+
+        .amount.expense {
+            color: #e74c3c;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .info-value {
+            color: #333;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .loading::after {
+            content: '...';
+            animation: dots 1.5s steps(5, end) infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% { color: rgba(0,0,0,0); text-shadow: .25em 0 0 rgba(0,0,0,0), .5em 0 0 rgba(0,0,0,0);}
+            40% { color: white; text-shadow: .25em 0 0 rgba(0,0,0,0), .5em 0 0 rgba(0,0,0,0);}
+            60% { text-shadow: .25em 0 0 white, .5em 0 0 rgba(0,0,0,0);}
+            80%, 100% { text-shadow: .25em 0 0 white, .5em 0 0 white;}
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .button {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            text-decoration: none;
+            text-align: center;
+        }
+
+        .button:active {
+            transform: scale(0.98);
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="header">
+                <h1>交易详情</h1>
+                <div id="loading" class="loading">加载中</div>
+                <div id="error" class="error hidden"></div>
+                <div id="success" class="success hidden"></div>
+            </div>
+
+            <div id="transactionDetails" class="hidden">
+                <div id="amountDisplay" class="amount">¥0.00</div>
+
+                <div class="info-row">
+                    <span class="info-label">交易类型</span>
+                    <span class="info-value" id="typeValue">-</span>
+                </div>
+
+                <div class="info-row">
+                    <span class="info-label">交易金额</span>
+                    <span class="info-value" id="amountValue">-</span>
+                </div>
+
+                <div class="info-row">
+                    <span class="info-label">交易日期</span>
+                    <span class="info-value" id="dateValue">-</span>
+                </div>
+
+                <div class="info-row">
+                    <span class="info-label">描述</span>
+                    <span class="info-value" id="descriptionValue">-</span>
+                </div>
+
+                <div class="info-row">
+                    <span class="info-label">分类ID</span>
+                    <span class="info-value" id="categoryValue">-</span>
+                </div>
+
+                <div class="info-row">
+                    <span class="info-label">创建时间</span>
+                    <span class="info-value" id="createdAtValue">-</span>
+                </div>
+            </div>
+
+            <div style="margin-top: 30px;">
+                <button class="button" onclick="location.href='test-mobile-features.html'">返回测试首页</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://115.191.1.197:9091/api/v1';
+
+        // 从 URL 参数获取交易ID
+        const urlParams = new URLSearchParams(window.location.search);
+        const transactionId = urlParams.get('id') || '999b6f7a-99bd-45bd-9eaf-58376838cc58';
+        const userId = '4b443ebf-a9c9-44bc-bbfb-733330cc9f9f'; // 测试用户ID
+
+        console.log('交易ID:', transactionId);
+        console.log('用户ID:', userId);
+        console.log('API地址:', API_BASE_URL);
+
+        async function loadTransaction() {
+            const loadingEl = document.getElementById('loading');
+            const errorEl = document.getElementById('error');
+            const successEl = document.getElementById('success');
+            const detailsEl = document.getElementById('transactionDetails');
+
+            try {
+                console.log('开始加载交易详情...');
+                const response = await fetch(`${API_BASE_URL}/transactions/${transactionId}?user_id=${userId}`);
+                console.log('响应状态:', response.status);
+
+                const data = await response.json();
+                console.log('响应数据:', data);
+
+                if (response.ok && data.data) {
+                    const transaction = data.data;
+
+                    // 显示成功消息
+                    successEl.textContent = '✅ 加载成功！';
+                    successEl.classList.remove('hidden');
+
+                    // 隐藏加载和错误
+                    loadingEl.classList.add('hidden');
+                    errorEl.classList.add('hidden');
+
+                    // 显示交易详情
+                    detailsEl.classList.remove('hidden');
+
+                    // 填充数据
+                    const amountEl = document.getElementById('amountDisplay');
+                    const amount = parseFloat(transaction.amount) || 0;
+                    amountEl.textContent = `¥${amount.toFixed(2)}`;
+
+                    if (transaction.type === 'expense') {
+                        amountEl.classList.add('expense');
+                    } else {
+                        amountEl.classList.remove('expense');
+                    }
+
+                    document.getElementById('typeValue').textContent =
+                        transaction.type === 'income' ? '收入' : '支出';
+                    document.getElementById('amountValue').textContent = `¥${amount.toFixed(2)}`;
+
+                    // 格式化日期
+                    const date = new Date(transaction.transaction_date);
+                    document.getElementById('dateValue').textContent = date.toLocaleString('zh-CN');
+
+                    document.getElementById('descriptionValue').textContent =
+                        transaction.description || '无描述';
+                    document.getElementById('categoryValue').textContent =
+                        transaction.category_id || '未分类';
+
+                    const createdAt = new Date(transaction.created_at);
+                    document.getElementById('createdAtValue').textContent = createdAt.toLocaleString('zh-CN');
+
+                    console.log('✅ 交易详情加载成功');
+                } else {
+                    throw new Error(data.error || '加载失败');
+                }
+            } catch (error) {
+                console.error('❌ 加载失败:', error);
+
+                // 显示错误消息
+                errorEl.textContent = `❌ 加载失败: ${error.message}`;
+                errorEl.classList.remove('hidden');
+
+                // 隐藏加载和成功
+                loadingEl.classList.add('hidden');
+                successEl.classList.add('hidden');
+                detailsEl.classList.add('hidden');
+            }
+        }
+
+        // 页面加载时自动加载交易
+        window.addEventListener('load', loadTransaction);
+    </script>
+</body>
+</html>

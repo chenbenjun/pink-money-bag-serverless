@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>网络测试</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f0f0f0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h1 { color: #333; }
+    .info {
+      margin: 10px 0;
+      padding: 10px;
+      background: #e3f2fd;
+      border-radius: 4px;
+    }
+    .success {
+      color: #27ae60;
+      font-weight: bold;
+    }
+    .error {
+      color: #e74c3c;
+      font-weight: bold;
+    }
+    button {
+      background: #007AFF;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 5px;
+    }
+    #result {
+      margin-top: 20px;
+      padding: 10px;
+      background: #f5f5f5;
+      border-radius: 4px;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧪 网络连接测试</h1>
+
+    <div class="info">
+      <strong>当前页面地址：</strong>
+      <span id="currentUrl"></span>
+    </div>
+
+    <div class="info">
+      <strong>电脑 IP：</strong>115.191.1.197
+    </div>
+
+    <div class="info">
+      <strong>测试目标：</strong>
+      <ul>
+        <li>前端服务：http://115.191.1.197:5000</li>
+        <li>后端服务：http://115.191.1.197:9091</li>
+      </ul>
+    </div>
+
+    <button onclick="testBackend()">测试后端连接</button>
+    <button onclick="testFrontend()">测试前端连接</button>
+
+    <div id="result">等待测试...</div>
+
+    <div class="info" style="margin-top: 20px;">
+      <strong>如果所有测试都失败：</strong>
+      <ol>
+        <li>检查手机和电脑是否在同一 Wi-Fi</li>
+        <li>检查电脑防火墙是否阻止了 5000 和 9091 端口</li>
+        <li>尝试 ping 电脑：ping 115.191.1.197</li>
+        <li>联系网络管理员</li>
+      </ol>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('currentUrl').textContent = window.location.href;
+
+    async function testBackend() {
+      const result = document.getElementById('result');
+      result.innerHTML = '测试中...';
+
+      try {
+        const response = await fetch('http://115.191.1.197:9091/api/v1/health');
+        const data = await response.json();
+
+        if (response.ok) {
+          result.innerHTML = `<span class="success">✅ 后端连接成功！</span>\n\n数据：${JSON.stringify(data)}`;
+        } else {
+          result.innerHTML = `<span class="error">❌ 后端返回错误：${response.status}</span>`;
+        }
+      } catch (error) {
+        result.innerHTML = `<span class="error">❌ 无法连接后端：${error.message}</span>\n\n可能原因：\n1. 端口被防火墙阻止\n2. 网络不通\n3. 服务未启动`;
+      }
+    }
+
+    async function testFrontend() {
+      const result = document.getElementById('result');
+      result.innerHTML = '测试中...';
+
+      try {
+        const response = await fetch('http://115.191.1.197:5000/test-transaction-detail.html');
+
+        if (response.ok) {
+          result.innerHTML = `<span class="success">✅ 前端连接成功！</span>\n\n状态码：${response.status}`;
+        } else {
+          result.innerHTML = `<span class="error">❌ 前端返回错误：${response.status}</span>`;
+        }
+      } catch (error) {
+        result.innerHTML = `<span class="error">❌ 无法连接前端：${error.message}</span>\n\n可能原因：\n1. 端口被防火墙阻止\n2. 网络不通\n3. 服务未启动`;
+      }
+    }
+  </script>
+</body>
+</html>

@@ -100,7 +100,8 @@ export default function FeedbackScreen() {
       });
 
       const result = await response.json();
-      if (result.success) {
+      // 检查 HTTP 状态码和 success 字段
+      if (response.ok && (result.success || result.data)) {
         Alert.alert('提交成功', '感谢您的反馈，我们会尽快处理！', [
           { text: '确定', onPress: () => {
             setFeedback('');

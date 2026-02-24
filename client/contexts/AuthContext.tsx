@@ -3,6 +3,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_BASE_URL;
 
+console.log('=== AuthContext 初始化 ===');
+console.log('API_BASE_URL:', API_BASE_URL);
+console.log('process.env.EXPO_PUBLIC_BACKEND_BASE_URL:', process.env.EXPO_PUBLIC_BACKEND_BASE_URL);
+
 export interface User {
   id: string;
   name: string;

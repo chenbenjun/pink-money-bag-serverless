@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>记账应用 - 功能测试</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .status {
+            text-align: center;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #495057;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+
+        .section-title::before {
+            content: '';
+            display: inline-block;
+            width: 4px;
+            height: 20px;
+            background: #667eea;
+            margin-right: 10px;
+            border-radius: 2px;
+        }
+
+        .info {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 12px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #0d47a1;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #495057;
+            font-size: 14px;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .button {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-bottom: 10px;
+        }
+
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .button:active {
+            transform: translateY(0);
+        }
+
+        .button.secondary {
+            background: #6c757d;
+        }
+
+        .button.success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+
+        .log {
+            background: #212529;
+            color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        .result {
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+
+        .result.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .result.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 20px;
+            }
+
+            .section {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📱 记账应用 - 功能测试</h1>
+        <p class="subtitle">手机端验证页面</p>
+
+        <div id="status" class="status hidden"></div>
+
+        <!-- 1. 后端连接测试 -->
+        <div class="section">
+            <div class="section-title">🔗 1. 后端连接测试</div>
+            <p style="margin-bottom: 15px; color: #666; font-size: 14px;">测试手机能否连接到后端服务器</p>
+            <button class="button" onclick="testBackendConnection()">测试后端连接</button>
+            <div id="backendResult" class="result hidden"></div>
+            <div id="backendLog" class="log hidden"></div>
+        </div>
+
+        <!-- 2. 交易详情页测试 -->
+        <div class="section">
+            <div class="section-title">💰 2. 交易详情页测试</div>
+            <div class="info">
+                点击下方按钮跳转到交易详情页面，查看是否能正常加载交易数据
+            </div>
+            <div class="input-group">
+                <label>交易ID（已预填测试数据）:</label>
+                <input type="text" id="transactionId" value="999b6f7a-99bd-45bd-9eaf-58376838cc58" readonly>
+            </div>
+            <button class="button success" onclick="openTransactionDetail()">打开交易详情页</button>
+            <div id="detailResult" class="result hidden"></div>
+        </div>
+
+        <!-- 3. 意见反馈测试 -->
+        <div class="section">
+            <div class="section-title">📝 3. 意见反馈测试</div>
+            <div class="info">
+                填写反馈信息并提交，测试意见反馈功能是否正常工作
+            </div>
+            <form id="feedbackForm">
+                <div class="input-group">
+                    <label for="feedbackType">反馈类型:</label>
+                    <select id="feedbackType" required>
+                        <option value="bug">问题反馈</option>
+                        <option value="feature">功能建议</option>
+                        <option value="other">其他</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label for="feedbackContent">反馈内容:</label>
+                    <textarea id="feedbackContent" placeholder="请输入您的反馈内容..." required></textarea>
+                </div>
+                <button type="submit" class="button">提交反馈</button>
+            </form>
+            <div id="feedbackResult" class="result hidden"></div>
+            <div id="feedbackLog" class="log hidden"></div>
+        </div>
+
+        <!-- 4. 测试总结 -->
+        <div class="section">
+            <div class="section-title">✅ 4. 测试总结</div>
+            <div style="text-align: center; margin-top: 15px;">
+                <button class="button secondary" onclick="runAllTests()">运行所有测试</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://115.191.1.197:9091/api/v1';
+
+        // 工具函数：显示状态
+        function showStatus(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `result ${type}`;
+            element.classList.remove('hidden');
+        }
+
+        // 工具函数：显示日志
+        function showLog(elementId, message) {
+            const element = document.getElementById(elementId);
+            const timestamp = new Date().toLocaleTimeString();
+            element.textContent += `[${timestamp}] ${message}\n`;
+            element.classList.remove('hidden');
+            element.scrollTop = element.scrollHeight;
+        }
+
+        // 工具函数：清除日志
+        function clearLog(elementId) {
+            const element = document.getElementById(elementId);
+            element.textContent = '';
+        }
+
+        // 1. 测试后端连接
+        async function testBackendConnection() {
+            const logElement = 'backendLog';
+            clearLog(logElement);
+
+            showLog(logElement, '开始测试后端连接...');
+            showLog(logElement, `API地址: ${API_BASE_URL}`);
+
+            try {
+                showLog(logElement, '发送请求到 /health 端点...');
+                const response = await fetch(`${API_BASE_URL}/health`);
+
+                showLog(logElement, `响应状态: ${response.status} ${response.statusText}`);
+                showLog(logElement, `响应类型: ${response.headers.get('content-type')}`);
+
+                const data = await response.json();
+                showLog(logElement, `响应数据: ${JSON.stringify(data, null, 2)}`);
+
+                if (response.ok) {
+                    showStatus('backendResult', '✅ 后端连接成功！服务器运行正常。', 'success');
+                } else {
+                    showStatus('backendResult', `❌ 后端响应异常: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                showLog(logElement, `错误详情: ${error.message}`);
+                showStatus('backendResult', '❌ 后端连接失败！请检查网络设置。', 'error');
+            }
+        }
+
+        // 2. 打开交易详情页
+        function openTransactionDetail() {
+            const transactionId = document.getElementById('transactionId').value;
+            const url = `http://115.191.1.197:3000/transaction-detail-simple.html?id=${transactionId}`;
+
+            showStatus('detailResult', '📱 正在打开交易详情页...', 'success');
+            window.open(url, '_blank');
+
+            // 延迟显示提示
+            setTimeout(() => {
+                showStatus('detailResult', '✅ 已打开新窗口，请查看交易详情页是否能正常加载', 'success');
+            }, 1000);
+        }
+
+        // 3. 提交反馈
+        async function submitFeedback(event) {
+            event.preventDefault();
+
+            const logElement = 'feedbackLog';
+            clearLog(logElement);
+
+            const feedbackType = document.getElementById('feedbackType').value;
+            const feedbackContent = document.getElementById('feedbackContent').value;
+
+            showLog(logElement, '开始提交反馈...');
+            showLog(logElement, `反馈类型: ${feedbackType}`);
+            showLog(logElement, `反馈内容: ${feedbackContent.substring(0, 50)}...`);
+
+            try {
+                showLog(logElement, `发送请求到 ${API_BASE_URL}/feedback...`);
+
+                const response = await fetch(`${API_BASE_URL}/feedback`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        type: feedbackType,
+                        content: feedbackContent,
+                        user_id: '4b443ebf-a9c9-44bc-bbfb-733330cc9f9f' // 测试用户ID
+                    })
+                });
+
+                showLog(logElement, `响应状态: ${response.status} ${response.statusText}`);
+
+                const data = await response.json();
+                showLog(logElement, `响应数据: ${JSON.stringify(data, null, 2)}`);
+
+                if (response.ok) {
+                    showStatus('feedbackResult', '✅ 反馈提交成功！感谢您的反馈。', 'success');
+                    document.getElementById('feedbackForm').reset();
+                } else {
+                    showStatus('feedbackResult', `❌ 反馈提交失败: ${data.error || '未知错误'}`, 'error');
+                }
+            } catch (error) {
+                showLog(logElement, `错误详情: ${error.message}`);
+                showStatus('feedbackResult', '❌ 网络错误，请检查连接。', 'error');
+            }
+        }
+
+        // 绑定反馈表单提交
+        document.getElementById('feedbackForm').addEventListener('submit', submitFeedback);
+
+        // 4. 运行所有测试
+        async function runAllTests() {
+            alert('将依次运行所有测试，请耐心等待...');
+
+            // 测试1：后端连接
+            await testBackendConnection();
+            await sleep(2000);
+
+            // 测试3：模拟提交反馈
+            showLog('feedbackLog', '运行自动测试：提交测试反馈...');
+            document.getElementById('feedbackType').value = 'other';
+            document.getElementById('feedbackContent').value = '这是自动测试反馈';
+
+            const submitEvent = new Event('submit');
+            document.getElementById('feedbackForm').dispatchEvent(submitEvent);
+
+            alert('测试完成！请查看各个部分的测试结果。');
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // 页面加载时自动测试后端连接
+        window.addEventListener('load', () => {
+            console.log('页面已加载，准备测试...');
+            // 自动运行后端连接测试
+            setTimeout(testBackendConnection, 500);
+        });
+    </script>
+</body>
+</html>
