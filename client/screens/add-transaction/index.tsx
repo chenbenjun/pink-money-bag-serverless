@@ -67,6 +67,28 @@ export default function AddTransactionScreen() {
   const [newCategoryIcon, setNewCategoryIcon] = useState('wallet');
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
 
+  // 金额输入处理 - 只允许数字和小数点
+  const handleAmountChange = (text: string) => {
+    // 移除非数字和小数点
+    let filtered = text.replace(/[^0-9.]/g, '');
+    
+    // 防止多个小数点
+    const parts = filtered.split('.');
+    if (parts.length > 2) {
+      filtered = parts.slice(0, 2).join('.');
+    }
+    
+    // 限制小数点后最多2位
+    const dotIndex = filtered.indexOf('.');
+    if (dotIndex !== -1) {
+      const beforeDot = filtered.substring(0, dotIndex + 1);
+      const afterDot = filtered.substring(dotIndex + 1);
+      filtered = beforeDot + afterDot.slice(0, 2);
+    }
+    
+    setAmount(filtered);
+  };
+
   useEffect(() => {
     fetchCategories();
     // 预加载微信音效（如果是收入类型）
@@ -457,7 +479,7 @@ export default function AddTransactionScreen() {
               placeholder="0.00"
               placeholderTextColor={theme.textMuted}
               value={amount}
-              onChangeText={setAmount}
+              onChangeText={handleAmountChange}
               keyboardType="decimal-pad"
             />
           </View>

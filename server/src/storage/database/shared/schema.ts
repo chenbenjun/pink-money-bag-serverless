@@ -100,7 +100,10 @@ export const updatePasswordSchema = z.object({
 });
 
 export const insertTransactionSchema = z.object({
-	amount: z.string().min(1),
+	amount: z.string().refine(
+		(val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0,
+		{ message: '金额必须是有效的正数' }
+	),
 	type: z.enum(['income', 'expense']),
 	category_id: z.string().optional(),
 	description: z.string().optional().nullable(),
