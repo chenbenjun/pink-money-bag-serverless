@@ -72,6 +72,9 @@ export default function HomeScreen() {
   };
 
   const loadData = async () => {
+    // 如果没有用户，直接返回
+    if (!currentUser?.id) return;
+    
     setLoading(true);
     // 开始播放数字滚动音效
     startTickingSound(800);
@@ -82,6 +85,9 @@ export default function HomeScreen() {
   };
 
   useEffect(() => {
+    // 只有用户已登录时才加载首页数据
+    if (!currentUser?.id) return;
+
     // 预加载银子音效
     preloadCoinSound();
     
@@ -114,7 +120,9 @@ export default function HomeScreen() {
       }
     });
 
+    // 清理函数：组件卸载时停止声音
     return () => {
+      stopTickingSound();
       unsubscribe();
       unsubscribeTransactionAdded();
     };
