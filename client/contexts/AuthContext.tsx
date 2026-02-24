@@ -35,6 +35,7 @@ interface AuthContextType {
   deleteUser: (userId: string) => Promise<boolean>;
   refreshUsers: () => Promise<void>;
   verifyCurrentPassword: (userId: string, currentPassword: string) => Promise<boolean>;
+  refreshCurrentUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -298,6 +299,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // 刷新当前用户信息
+  const refreshCurrentUser = async () => {
+    if (!currentUser?.id) return;
+    try {
+      const user = await fetchUserById(currentUser.id);
+      if (user) {
+        setCurrentUser(user);
+        console.log('刷新当前用户信息成功:', user.name, 'is_admin:', user.is_admin);
+      }
+    } catch (error) {
+      console.error('刷新当前用户信息失败:', error);
+    }
+  };
+
   // 更新用户信息
   const updateUser = async (
     userId: string,
@@ -423,6 +438,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         deleteUser,
         refreshUsers,
         verifyCurrentPassword,
+        refreshCurrentUser,
       }}
     >
       {children}

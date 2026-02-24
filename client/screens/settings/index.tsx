@@ -111,7 +111,7 @@ const USER_AGREEMENT = `用户协议
 export default function SettingsScreen() {
   const { theme, isDark } = useTheme();
   const router = useSafeRouter();
-  const { currentUser, updateUser, deleteUser, logout } = useAuth();
+  const { currentUser, updateUser, deleteUser, logout, refreshCurrentUser } = useAuth();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
   const [loading, setLoading] = useState(false);
@@ -178,12 +178,15 @@ export default function SettingsScreen() {
       }
     };
     loadSoundSetting();
+    calculateCacheSize();
   }, []);
 
-  // 进入页面时检查未读反馈
+  // 进入页面时检查未读反馈和刷新用户信息
   useFocusEffect(
     React.useCallback(() => {
       checkUnreadFeedback();
+      // 刷新用户信息以获取最新的 is_admin 状态
+      refreshCurrentUser();
     }, [currentUser?.id])
   );
 
