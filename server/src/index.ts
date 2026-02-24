@@ -4,6 +4,7 @@ import categoriesRouter from './routes/categories';
 import transactionsRouter from './routes/transactions';
 import usersRouter from './routes/users';
 import feedbacksRouter from './routes/feedbacks';
+import versionRouter from './routes/version';
 
 const app = express();
 
@@ -23,6 +24,7 @@ app.use('/api/v1/categories', categoriesRouter);
 app.use('/api/v1/transactions', transactionsRouter);
 app.use('/api/v1/users', usersRouter);
 app.use('/api/v1/feedbacks', feedbacksRouter);
+app.use('/api/v1/version', versionRouter);
 
 // For Vercel
 export default app;

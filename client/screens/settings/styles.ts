@@ -124,6 +124,24 @@ export const createStyles = (theme: Theme) => {
       fontSize: 10,
       fontWeight: '700',
     },
+    // 版本容器
+    versionContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.xs,
+    },
+    // NEW 标记
+    newBadge: {
+      backgroundColor: '#FF4444',
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 4,
+    },
+    newBadgeText: {
+      color: '#FFFFFF',
+      fontSize: 10,
+      fontWeight: '700',
+    },
     // 头像预览
     avatarPreview: {
       width: 36,
@@ -233,33 +251,6 @@ export const createStyles = (theme: Theme) => {
     genderTextActive: {
       color: '#FF69B4',
       fontWeight: '500',
-    },
-    // 头像网格 - 3x4布局
-    avatarGrid: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      justifyContent: 'space-between',
-      gap: Spacing.sm,
-      marginBottom: Spacing.md,
-    },
-    avatarOption: {
-      width: '23%', // 4列布局，每列约23%宽度，留间隙
-      aspectRatio: 1,
-      borderRadius: 12,
-      borderWidth: 2,
-      borderColor: '#E0E0E0',
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: '#FAFAFA',
-    },
-    avatarOptionActive: {
-      borderColor: '#FF69B4',
-      backgroundColor: '#FFF0F5',
-    },
-    avatarLabel: {
-      fontSize: 11,
-      color: '#666',
-      marginTop: 4,
     },
     // 自定义上传按钮
     customAvatarButton: {
@@ -432,6 +423,204 @@ export const createStyles = (theme: Theme) => {
     },
     colorSchemeTextSelected: {
       color: theme.primary,
+      fontWeight: '600',
+    },
+    // 更新弹窗样式
+    updateModalContent: {
+      maxWidth: 360,
+      maxHeight: '85%',
+      padding: Spacing.lg,
+    },
+    updateModalHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.md,
+      marginBottom: Spacing.lg,
+    },
+    updateScroll: {
+      maxHeight: 350,
+      marginBottom: Spacing.md,
+    },
+    updateInfoRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: Spacing.sm,
+      paddingBottom: Spacing.sm,
+      borderBottomWidth: 0.5,
+      borderBottomColor: '#F0F0F0',
+    },
+    updateInfoLabel: {
+      fontSize: 14,
+      color: theme.textSecondary,
+      flex: 1,
+    },
+    updateInfoValue: {
+      fontSize: 14,
+      color: theme.textPrimary,
+      fontWeight: '500',
+    },
+    updateInfoValueNew: {
+      color: theme.primary,
+      fontWeight: '600',
+    },
+    updateLogContainer: {
+      backgroundColor: '#F8F8F8',
+      borderRadius: 12,
+      padding: Spacing.md,
+      marginTop: Spacing.md,
+    },
+    updateLogTitle: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: theme.textPrimary,
+      marginBottom: Spacing.sm,
+    },
+    updateLogText: {
+      fontSize: 13,
+      lineHeight: 20,
+      color: '#666',
+    },
+    updateButtons: {
+      flexDirection: 'row',
+      gap: Spacing.md,
+      marginTop: Spacing.md,
+    },
+    updateButtonSecondary: {
+      flex: 1,
+      paddingVertical: Spacing.md,
+      borderRadius: 12,
+      backgroundColor: '#F5F5F5',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    updateButtonTextSecondary: {
+      fontSize: 15,
+      color: '#666',
+      fontWeight: '500',
+    },
+    updateButtonPrimary: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: Spacing.sm,
+      paddingVertical: Spacing.md,
+      borderRadius: 12,
+      backgroundColor: theme.primary,
+    },
+    updateButtonTextPrimary: {
+      fontSize: 15,
+      color: '#FFFFFF',
+      fontWeight: '600',
+    },
+    downloadingContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    // 头像弹窗相关样式
+    avatarGridScroll: {
+      maxHeight: 320,
+      marginBottom: Spacing.md,
+    },
+    avatarGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'space-between',
+      gap: Spacing.sm,
+      marginBottom: Spacing.md,
+    },
+    avatarOption: {
+      width: '23%',
+      aspectRatio: 1,
+      borderRadius: 12,
+      borderWidth: 2,
+      borderColor: '#E0E0E0',
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: '#FAFAFA',
+    },
+    avatarOptionSelected: {
+      borderColor: '#FF69B4',
+      backgroundColor: '#FF69B4',
+    },
+    avatarOptionLabel: {
+      fontSize: 10,
+      color: '#666',
+      marginTop: 2,
+    },
+    avatarOptionLabelSelected: {
+      color: '#FFFFFF',
+      fontWeight: '500',
+    },
+    avatarUploadButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: Spacing.sm,
+      paddingVertical: Spacing.md,
+      borderRadius: 12,
+      backgroundColor: '#FF69B4',
+      marginBottom: Spacing.sm,
+    },
+    avatarUploadButtonText: {
+      fontSize: 15,
+      color: '#FFFFFF',
+      fontWeight: '600',
+    },
+    avatarCancelButton: {
+      paddingVertical: Spacing.md,
+      borderRadius: 12,
+      backgroundColor: '#F5F5F5',
+      alignItems: 'center',
+    },
+    avatarCancelButtonText: {
+      fontSize: 15,
+      color: '#666',
+      fontWeight: '500',
+    },
+    // 密码弹窗样式
+    passwordModalContent: {
+      maxWidth: 320,
+      padding: Spacing.xl,
+    },
+    passwordInput: {
+      borderWidth: 1,
+      borderColor: '#E0E0E0',
+      borderRadius: 12,
+      paddingVertical: Spacing.md,
+      paddingHorizontal: Spacing.md,
+      fontSize: 15,
+      color: theme.textPrimary,
+      marginBottom: Spacing.md,
+    },
+    passwordButtons: {
+      flexDirection: 'row',
+      gap: Spacing.md,
+      marginTop: Spacing.md,
+    },
+    passwordButtonSecondary: {
+      flex: 1,
+      paddingVertical: Spacing.md,
+      borderRadius: 12,
+      backgroundColor: '#F5F5F5',
+      alignItems: 'center',
+    },
+    passwordButtonTextSecondary: {
+      fontSize: 15,
+      color: '#666',
+      fontWeight: '500',
+    },
+    passwordButtonPrimary: {
+      flex: 1,
+      paddingVertical: Spacing.md,
+      borderRadius: 12,
+      backgroundColor: '#FF69B4',
+      alignItems: 'center',
+    },
+    passwordButtonTextPrimary: {
+      fontSize: 15,
+      color: '#FFFFFF',
       fontWeight: '600',
     },
   });

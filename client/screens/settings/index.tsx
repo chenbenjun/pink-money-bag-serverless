@@ -7,11 +7,14 @@ import {
   Modal,
   Pressable,
   Image,
+  Platform,
+  TextInput,
 } from 'react-native';
-import { TextInput } from 'react-native';
 import { FontAwesome6 } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as Constants from 'expo-constants';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
 import { useTheme } from '@/hooks/useTheme';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
@@ -150,6 +153,33 @@ export default function SettingsScreen() {
   // 获取应用版本号
   const appVersion = (Constants as any).expoConfig?.version || '2.0.1';
 
+  // 版本更新相关
+  const [hasNewVersion, setHasNewVersion] = useState(false);
+  const [latestVersionInfo, setLatestVersionInfo] = useState<any>(null);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
+
+  // 检查版本更新
+  const checkVersionUpdate = async () => {
+    try {
+      const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_BASE_URL || 'http://localhost:9091';
+      const response = await fetch(
+        `${API_BASE_URL}/api/v1/version/check?currentVersion=${appVersion}`
+      );
+      const result = await response.json();
+
+      if (result.success && result.data) {
+        setHasNewVersion(result.data.needsUpdate);
+        if (result.data.needsUpdate) {
+          setLatestVersionInfo(result.data);
+        }
+      }
+    } catch (error) {
+      console.error('检查版本更新失败:', error);
+    }
+  };
+
   // 检查未读反馈
   const checkUnreadFeedback = async () => {
     if (!currentUser?.id) return;
@@ -190,6 +220,7 @@ export default function SettingsScreen() {
     loadSoundSetting();
     calculateCacheSize();
     loadThemeSettings();
+    checkVersionUpdate(); // 检查版本更新
   }, []);
 
   // 加载主题设置
@@ -400,6 +431,82 @@ export default function SettingsScreen() {
     }
   };
 
+  // 下载更新
+  const handleDownloadUpdate = async () => {
+    if (!latestVersionInfo?.downloadUrl) return;
+
+    setDownloading(true);
+    setDownloadProgress(0);
+
+    try {
+      const response = await fetch(latestVersionInfo.downloadUrl);
+      if (!response.ok) {
+        throw new Error(`下载失败：${response.status}`);
+      }
+
+      const contentLength = response.headers.get('content-length');
+      const total = contentLength ? parseInt(contentLength, 10) : 0;
+      const reader = response.body?.getReader();
+
+      if (!reader) {
+        throw new Error('无法读取文件流');
+      }
+
+      const chunks: Uint8Array[] = [];
+      let receivedLength = 0;
+
+      while (true) {
+        const { done, value } = await reader.read();
+
+        if (done) break;
+
+        chunks.push(value);
+        receivedLength += value.length;
+
+        // 更新下载进度
+        if (total > 0) {
+          const progress = Math.round((receivedLength / total) * 100);
+          setDownloadProgress(progress);
+        }
+      }
+
+      // 将 chunks 合并为一个 Uint8Array
+      const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
+      const uint8Array = new Uint8Array(totalLength);
+      let offset = 0;
+      for (const chunk of chunks) {
+        uint8Array.set(chunk, offset);
+        offset += chunk.length;
+      }
+
+      // 写入临时文件
+      const filename = `PinkMoneyBag_${latestVersionInfo.latestVersion}.apk`;
+      const fileUri = (FileSystem as any).documentDirectory + filename;
+
+      await (FileSystem as any).writeAsStringAsync(
+        fileUri,
+        Buffer.from(uint8Array).toString('base64'),
+        { encoding: (FileSystem as any).EncodingType.Base64 }
+      );
+
+      // 提示用户安装
+      if (Platform.OS === 'android') {
+        await Sharing.shareAsync(fileUri, {
+          mimeType: 'application/vnd.android.package-archive',
+          dialogTitle: '安装更新',
+        });
+      } else {
+        Alert.alert('提示', '下载完成，请手动安装');
+      }
+
+      setDownloading(false);
+      setShowUpdateModal(false);
+    } catch (error: any) {
+      Alert.alert('提示', '下载失败：' + error.message);
+      setDownloading(false);
+    }
+  };
+
   // 修改密码
   const handleChangePassword = async () => {
     if (!currentUser) return;
@@ -443,7 +550,11 @@ export default function SettingsScreen() {
 
   // 检查更新
   const handleCheckUpdate = () => {
-    Alert.alert('检查更新', `当前已是最新版本 V${appVersion}`);
+    if (hasNewVersion && latestVersionInfo) {
+      setShowUpdateModal(true);
+    } else {
+      Alert.alert('检查更新', `当前已是最新版本 V${appVersion}`);
+    }
   };
 
   // 意见反馈
@@ -663,6 +774,83 @@ export default function SettingsScreen() {
     </Modal>
   );
 
+  // 版本更新弹窗
+  const renderUpdateModal = () => {
+    if (!latestVersionInfo) return null;
+
+    return (
+      <Modal
+        visible={showUpdateModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowUpdateModal(false)}
+      >
+        <Pressable style={styles.modalOverlay} onPress={() => setShowUpdateModal(false)}>
+          <View style={[styles.modalContent, styles.updateModalContent]}>
+            <View style={styles.updateModalHeader}>
+              <FontAwesome6 name="download" size={24} color={theme.primary} />
+              <ThemedText style={styles.modalTitle}>发现新版本</ThemedText>
+              <TouchableOpacity onPress={() => setShowUpdateModal(false)}>
+                <FontAwesome6 name="xmark" size={24} color={theme.textPrimary} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.updateScroll} showsVerticalScrollIndicator={false}>
+              <View style={styles.updateInfoRow}>
+                <ThemedText style={styles.updateInfoLabel}>当前版本：</ThemedText>
+                <ThemedText style={styles.updateInfoValue}>V{appVersion}</ThemedText>
+              </View>
+              <View style={styles.updateInfoRow}>
+                <ThemedText style={styles.updateInfoLabel}>最新版本：</ThemedText>
+                <ThemedText style={[styles.updateInfoValue, styles.updateInfoValueNew]}>
+                  V{latestVersionInfo.latestVersion}
+                </ThemedText>
+              </View>
+              <View style={styles.updateInfoRow}>
+                <ThemedText style={styles.updateInfoLabel}>发布日期：</ThemedText>
+                <ThemedText style={styles.updateInfoValue}>{latestVersionInfo.releaseDate}</ThemedText>
+              </View>
+
+              <View style={styles.updateLogContainer}>
+                <ThemedText style={styles.updateLogTitle}>更新内容</ThemedText>
+                <ThemedText style={styles.updateLogText}>{latestVersionInfo.updateLog}</ThemedText>
+              </View>
+            </ScrollView>
+
+            {latestVersionInfo.downloadUrl && (
+              <View style={styles.updateButtons}>
+                <TouchableOpacity
+                  style={styles.updateButtonSecondary}
+                  onPress={() => setShowUpdateModal(false)}
+                >
+                  <ThemedText style={styles.updateButtonTextSecondary}>稍后更新</ThemedText>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.updateButtonPrimary}
+                  onPress={handleDownloadUpdate}
+                  disabled={downloading}
+                >
+                  {downloading ? (
+                    <View style={styles.downloadingContainer}>
+                      <ThemedText style={styles.updateButtonTextPrimary}>
+                        下载中... {downloadProgress}%
+                      </ThemedText>
+                    </View>
+                  ) : (
+                    <>
+                      <FontAwesome6 name="download" size={18} color="#FFFFFF" />
+                      <ThemedText style={styles.updateButtonTextPrimary}>立即更新</ThemedText>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        </Pressable>
+      </Modal>
+    );
+  };
+
   // 协议弹窗
   const renderAgreementModal = () => (
     <Modal
@@ -750,6 +938,127 @@ export default function SettingsScreen() {
       />
     );
   };
+
+  // 头像选择弹窗
+  const renderAvatarModal = () => (
+    <Modal
+      visible={showAvatarModal}
+      transparent
+      animationType="slide"
+      onRequestClose={() => setShowAvatarModal(false)}
+    >
+      <Pressable style={styles.modalOverlay} onPress={() => setShowAvatarModal(false)}>
+        <View style={[styles.modalContent, styles.avatarModalContent]}>
+          <ThemedText style={styles.modalTitle}>选择头像</ThemedText>
+
+          <ScrollView style={styles.avatarGridScroll} showsVerticalScrollIndicator={false}>
+            <View style={styles.avatarGrid}>
+              {AVATAR_OPTIONS.map((option) => (
+                <TouchableOpacity
+                  key={option.name}
+                  style={[
+                    styles.avatarOption,
+                    currentUser?.avatar === option.name && currentUser?.avatar_type === 'preset' &&
+                    styles.avatarOptionSelected
+                  ]}
+                  onPress={() => handleSaveAvatar(option.name)}
+                  disabled={loading}
+                >
+                  <FontAwesome6
+                    name={option.name as any}
+                    size={32}
+                    color={currentUser?.avatar === option.name && currentUser?.avatar_type === 'preset' ? '#FFFFFF' : '#FF69B4'}
+                  />
+                  <ThemedText style={[
+                    styles.avatarOptionLabel,
+                    currentUser?.avatar === option.name && currentUser?.avatar_type === 'preset' &&
+                    styles.avatarOptionLabelSelected
+                  ]}>
+                    {option.label}
+                  </ThemedText>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </ScrollView>
+
+          <TouchableOpacity
+            style={styles.avatarUploadButton}
+            onPress={handlePickImage}
+            disabled={loading}
+          >
+            <FontAwesome6 name="camera" size={20} color="#FFFFFF" />
+            <ThemedText style={styles.avatarUploadButtonText}>从相册选择</ThemedText>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.avatarCancelButton}
+            onPress={() => setShowAvatarModal(false)}
+          >
+            <ThemedText style={styles.avatarCancelButtonText}>取消</ThemedText>
+          </TouchableOpacity>
+        </View>
+      </Pressable>
+    </Modal>
+  );
+
+  // 修改密码弹窗
+  const renderPasswordModal = () => (
+    <Modal
+      visible={showPasswordModal}
+      transparent
+      animationType="slide"
+      onRequestClose={() => setShowPasswordModal(false)}
+    >
+      <Pressable style={styles.modalOverlay} onPress={() => setShowPasswordModal(false)}>
+        <View style={[styles.modalContent, styles.passwordModalContent]}>
+          <ThemedText style={styles.modalTitle}>修改密码</ThemedText>
+
+          <TextInput
+            style={styles.passwordInput}
+            placeholder="当前密码"
+            placeholderTextColor="#999"
+            secureTextEntry
+            value={currentPassword}
+            onChangeText={setCurrentPassword}
+          />
+
+          <TextInput
+            style={styles.passwordInput}
+            placeholder="新密码"
+            placeholderTextColor="#999"
+            secureTextEntry
+            value={newPassword}
+            onChangeText={setNewPassword}
+          />
+
+          <TextInput
+            style={styles.passwordInput}
+            placeholder="确认新密码"
+            placeholderTextColor="#999"
+            secureTextEntry
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+          />
+
+          <View style={styles.passwordButtons}>
+            <TouchableOpacity
+              style={styles.passwordButtonSecondary}
+              onPress={() => setShowPasswordModal(false)}
+            >
+              <ThemedText style={styles.passwordButtonTextSecondary}>取消</ThemedText>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.passwordButtonPrimary}
+              onPress={handleChangePassword}
+              disabled={loading}
+            >
+              <ThemedText style={styles.passwordButtonTextPrimary}>确认修改</ThemedText>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Pressable>
+    </Modal>
+  );
 
   return (
     <Screen backgroundColor={theme.backgroundRoot} statusBarStyle={isDark ? 'light' : 'dark'}>
@@ -852,7 +1161,16 @@ export default function SettingsScreen() {
             icon="rotate"
             title="检查更新"
             onPress={handleCheckUpdate}
-            rightContent={<ThemedText style={styles.menuItemValue}>V{appVersion}</ThemedText>}
+            rightContent={
+              <View style={styles.versionContainer}>
+                <ThemedText style={styles.menuItemValue}>V{appVersion}</ThemedText>
+                {hasNewVersion && (
+                  <View style={styles.newBadge}>
+                    <ThemedText style={styles.newBadgeText}>NEW</ThemedText>
+                  </View>
+                )}
+              </View>
+            }
           />
         </View>
 
@@ -889,8 +1207,11 @@ export default function SettingsScreen() {
       </ScrollView>
 
       {/* 弹窗 */}
+      {renderAvatarModal()}
+      {renderPasswordModal()}
       {renderAgreementModal()}
       {renderThemeModal()}
+      {renderUpdateModal()}
     </Screen>
   );
 }
