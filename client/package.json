@@ -5,8 +5,6 @@
   "private": true,
   "scripts": {
     "check-deps": "npx depcheck",
-    "postinstall": "npm run install-missing",
-    "install-missing": "node ./scripts/install-missing-deps.js",
     "lint": "expo lint",
     "start": "expo start --web --clear",
     "test": "jest --watchAll"
@@ -48,6 +46,7 @@
     "expo-symbols": "~1.0.8",
     "expo-system-ui": "~6.0.9",
     "expo-web-browser": "~15.0.10",
+    "expo-sharing": "~14.0.8",
     "js-base64": "^3.7.7",
     "react": "19.1.0",
     "react-dom": "19.1.0",

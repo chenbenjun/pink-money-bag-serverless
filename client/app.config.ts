@@ -9,7 +9,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ...config,
     "name": appName,
     "slug": slugAppName,
-    "version": "2.0.1",
+    "version": "2.0.2",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
@@ -29,7 +29,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         "backgroundColor": "#ffffff"
       },
       "package": `com.anonymous.x${projectId || '0'}`,
-      "versionCode": 3
+      "versionCode": 4
     },
     "web": {
       "bundler": "metro",
