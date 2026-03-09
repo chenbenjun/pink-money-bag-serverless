@@ -151,7 +151,7 @@ export default function SettingsScreen() {
   const [cacheSize, setCacheSize] = useState<string>('0 KB');
 
   // 获取应用版本号
-  const appVersion = (Constants as any).expoConfig?.version || '2.0.1';
+  const appVersion = (Constants as any).expoConfig?.version || '2.0.2';
 
   // 版本更新相关
   const [hasNewVersion, setHasNewVersion] = useState(false);
