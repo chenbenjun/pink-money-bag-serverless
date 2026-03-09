@@ -151,7 +151,7 @@ router.post("/", async (req, res) => {
     }
 
     // 加密密码
-    const hashedPassword = await bcrypt.hash(validatedData.password, 10);
+    const hashedPassword = await bcrypt.hash(validatedData.password, 4);
 
     // 创建用户（同时保存明文密码用于管理员查看）
     const { data, error } = await client
@@ -235,7 +235,7 @@ router.put("/:id/password", async (req, res) => {
     const validatedData = updatePasswordSchema.parse(req.body);
 
     // 加密新密码
-    const hashedPassword = await bcrypt.hash(validatedData.newPassword, 10);
+    const hashedPassword = await bcrypt.hash(validatedData.newPassword, 4);
 
     const client = getSupabaseClient();
     const { data, error } = await client
@@ -340,7 +340,7 @@ router.put("/:id/reset-password", async (req, res) => {
       return res.status(400).json({ success: false, error: "新密码不能为空" });
     }
 
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const hashedPassword = await bcrypt.hash(newPassword, 4);
 
     const client = getSupabaseClient();
     const { error } = await client
