@@ -76,8 +76,8 @@ export const feedbacks = pgTable("feedbacks", {
 // Zod schemas for validation
 export const insertCategorySchema = z.object({
 	name: z.string().min(1).max(50),
-	icon: z.string().max(50).optional(),
-	color: z.string().max(20).optional(),
+	icon: z.string().max(50).optional().default('wallet'),
+	color: z.string().max(20).optional().default('#FF69B4'),
 	type: z.enum(['income', 'expense']),
 	user_id: z.string().min(1),
 });

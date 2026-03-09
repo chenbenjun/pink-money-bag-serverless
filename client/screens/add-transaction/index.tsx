@@ -276,22 +276,27 @@ export default function AddTransactionScreen() {
     }
 
     try {
+      const requestBody = {
+        name: newCategoryName.trim(),
+        icon: newCategoryIcon,
+        color: '#FF69B4',
+        type,
+        user_id: currentUser.id,
+      };
+      
+      console.log('[分类添加] 请求体:', requestBody);
+
       const response = await fetch(
         `${API_BASE_URL}/api/v1/categories`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: newCategoryName.trim(),
-            icon: newCategoryIcon,
-            color: '#FF69B4',
-            type,
-            user_id: currentUser.id,
-          }),
+          body: JSON.stringify(requestBody),
         }
       );
 
       const result = await response.json();
+      console.log('[分类添加] 响应:', result);
 
       if (result.data) {
         await fetchCategories();
@@ -302,6 +307,7 @@ export default function AddTransactionScreen() {
         Alert.alert('错误', result.error || '添加失败');
       }
     } catch (error) {
+      console.error('[分类添加] 错误:', error);
       Alert.alert('错误', '网络错误，请重试');
     }
   };
